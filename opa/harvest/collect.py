@@ -1,8 +1,13 @@
 import argparse
-
+import asyncio
+import os
+from datetime import datetime
+from binance import AsyncClient
 from opa.storage.connector import InputOutputStream, CsvConnector
 from typing import List
 
+API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
+API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
 
 def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
     """
@@ -24,6 +29,8 @@ def collect_stream_data(symbols: List[str], intervals: List[str], output: InputO
     :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
     :return:
     """
+    # for symbol_i in symbols:
+    #     for interval_j in intervals:
 
     # écrire les données récupérées avec cette méthode
     # output.write()
@@ -52,4 +59,6 @@ if __name__ == "__main__":
 
     output = CsvConnector()
     collect_hist_data(symbols, intervals, output)
-    collect_stream_data(symbols, intervals, output)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(collect_stream_data(symbols, intervals, output))
+
