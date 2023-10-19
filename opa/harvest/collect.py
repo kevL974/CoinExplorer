@@ -4,6 +4,8 @@ import os
 from datetime import datetime
 from binance import AsyncClient, BinanceSocketManager
 from opa.storage.connector import InputOutputStream, CsvConnector
+from opa.harvest.ochlv_constant import *
+from opa.utils import *
 from typing import List
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
@@ -21,7 +23,9 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     """
     klines = await client.get_historical_klines(symbol, interval, "1 years ago UTC")
     for kline in klines:
-        output.write(kline, None)
+        ochlv = convert_hist_klines_websocket_to_tochlv_format(kline)
+        ochlv[KEY_SYMBOL] = symbol
+        output.write(ochlv, None)
 
 
 async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -38,8 +42,10 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
     ks = bm.kline_socket(symbol, interval)
     async with ks as kscm:
         while True:
-            res = await kscm.recv()
-            output.write(res, None)
+            kline = await kscm.recv()
+
+            if kline[KEY_FINAL_BAR]:
+                output.write(kline, None)
 
 
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
