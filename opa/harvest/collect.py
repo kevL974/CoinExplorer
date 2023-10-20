@@ -23,9 +23,8 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     """
     klines = await client.get_historical_klines(symbol, interval, "1 years ago UTC")
     for kline in klines:
-        ochlv = convert_hist_klines_websocket_to_tochlv_format(kline)
-        ochlv[KEY_SYMBOL] = symbol
-        output.write(ochlv, None)
+        stochlv = convert_hist_klines_websocket_to_stochlv_format(symbol, kline)
+        output.write(stochlv, None)
 
 
 async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -42,10 +41,11 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
     ks = bm.kline_socket(symbol, interval)
     async with ks as kscm:
         while True:
-            kline = await kscm.recv()
-
+            kline_socket_msg = await kscm.recv()
+            kline = kline_socket_msg[KEY_KLINE_CONTENT]
             if kline[KEY_FINAL_BAR]:
-                output.write(kline, None)
+                stochlv = convert_stream_klines_to_stochlv_format(kline)
+                output.write(stochlv, None)
 
 
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
