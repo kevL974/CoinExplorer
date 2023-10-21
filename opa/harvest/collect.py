@@ -1,20 +1,36 @@
 import argparse
+import pandas as pd
+import sys
 
-from opa.storage.connector import InputOutputStream, CsvConnector
-from typing import List
+from opa.storage.connector import *
+from download_kline import download_monthly_klines
 
+from datetime import *
+from enums import *
+from utility import download_file, get_all_symbols, get_parser, get_start_end_date_objects, convert_to_date_object, \
+    get_path
+from Organized_data import list_file, dezip
 
-def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
+def collect_hist_data(symbols: List[str], intervals: List[str]) -> None:
     """
-    Collect all historical data foreach symbols and intervals and save them in output given in parameter.
+    Collect all historical data for each symbols and intervals and save them in output given in parameter.
+    :param market_type : **spot**, **um** (USD-M Futures), **cm** (COIN-M Futures)  
     :param symbols: List of targeted symbols e.g ["BTCUSDT", "ETHBTC"]
     :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
     :return:
     """
 
+
     # écrire les données récupérées avec cette méthode
     # output.write()
-    pass
+
+
+    path = download_monthly_klines(type, symbols, intervals)
+
+    files = list_file(path)
+
+    dezip(path,files)
+
 
 
 def collect_stream_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
@@ -51,5 +67,5 @@ if __name__ == "__main__":
     intervals = args.interval
 
     output = CsvConnector()
-    collect_hist_data(symbols, intervals, output)
+    collect_hist_data(symbols,intervals)
     collect_stream_data(symbols, intervals, output)
