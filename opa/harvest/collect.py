@@ -9,7 +9,7 @@ from datetime import *
 from enums import *
 from utility import download_file, get_all_symbols, get_parser, get_start_end_date_objects, convert_to_date_object, \
     get_path
-from Organized_data import list_file, dezip
+from organized_data import list_file, dezip
 
 def collect_hist_data(symbols: List[str], intervals: List[str]) -> None:
     """
