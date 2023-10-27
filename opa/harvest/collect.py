@@ -1,12 +1,19 @@
 import argparse
 import asyncio
 import os
+import pandas as pd
+import sys
 from datetime import datetime
 from binance import AsyncClient, BinanceSocketManager
 from opa.storage.connector import InputOutputStream, CsvConnector
 from opa.harvest.ochlv_constant import *
 from opa.utils import *
 from typing import List
+from download_kline import download_monthly_klines
+from enums import *
+from utility import download_file, get_all_symbols, get_parser, get_start_end_date_objects, convert_to_date_object, \
+    get_path
+from organized_data import list_file, dezip
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
 API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
@@ -64,7 +71,8 @@ async def start_stream_data_collector(client: AsyncClient, symbol: str, interval
 
 def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
     """
-    Collect all historical data foreach symbols and intervals and save them in output given in parameter.
+    Collect all historical data for each symbols and intervals and save them in output given in parameter.
+    :param market_type : **spot**, **um** (USD-M Futures), **cm** (COIN-M Futures)
     :param symbols: List of targeted symbols e.g ["BTCUSDT", "ETHBTC"]
     :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
     :return:
@@ -72,7 +80,14 @@ def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOut
 
     # écrire les données récupérées avec cette méthode
     # output.write()
-    pass
+
+
+    path = download_monthly_klines(type, symbols, intervals)
+
+    files = list_file(path)
+
+    dezip(path, files)
+
 
 
 async def collect_stream_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
