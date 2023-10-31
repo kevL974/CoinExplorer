@@ -1,9 +1,8 @@
 import os, sys, re, shutil
 import json
 from pathlib import Path
-
 import urllib.request
-from argparse import ArgumentParser, RawTextHelpFormatter, ArgumentTypeError
+from argparse import ArgumentTypeError
 from enums import *
 
 
@@ -30,13 +29,11 @@ def get_all_symbols(type):
     return list(map(lambda symbol: symbol['symbol'], json.loads(response)['symbols']))
 
 
-def download_file(base_path, file_name, date_range=None, folder=None):
+def download_file(base_path, file_name, folder=None):
     download_path = "{}{}".format(base_path, file_name)
     if folder:
         base_path = os.path.join(folder, base_path)
-    if date_range:
-        date_range = date_range.replace(" ", "_")
-        base_path = os.path.join(base_path, date_range)
+
     save_path = get_destination_dir(os.path.join(base_path, file_name), folder)
 
     if os.path.exists(save_path):
@@ -112,59 +109,10 @@ def raise_arg_error(msg):
     raise ArgumentTypeError(msg)
 
 
-def get_path(trading_type, market_data_type, time_period, symbol, interval=None):
+def get_path(symbol, interval=None):
     trading_type_path = 'data/spot'
-    if trading_type != 'spot':
-        trading_type_path = f'data/futures/{trading_type}'
     if interval is not None:
-        path = f'{trading_type_path}/{time_period}/{market_data_type}/{symbol.upper()}/{interval}/'
+        path = f'{trading_type_path}/monthly/klines/{symbol.upper()}/{interval}/'
     else:
-        path = f'{trading_type_path}/{time_period}/{market_data_type}/{symbol.upper()}/'
+        path = f'{trading_type_path}/monthly/klines/{symbol.upper()}/'
     return path
-
-
-def get_parser(parser_type):
-    parser = ArgumentParser(description=("This is a script to download historical {} data").format(parser_type),
-                            formatter_class=RawTextHelpFormatter)
-    parser.add_argument(
-        '-s', dest='symbols', nargs='+',
-        help='Single symbol or multiple symbols separated by space')
-    parser.add_argument(
-        '-y', dest='years', default=YEARS, nargs='+', choices=YEARS,
-        help='Single year or multiple years separated by space\n-y 2019 2021 means to download {} from 2019 and 2021'.format(
-            parser_type))
-    parser.add_argument(
-        '-m', dest='months', default=MONTHS, nargs='+', type=int, choices=MONTHS,
-        help='Single month or multiple months separated by space\n-m 2 12 means to download {} from feb and dec'.format(
-            parser_type))
-    parser.add_argument(
-        '-d', dest='dates', nargs='+', type=match_date_regex,
-        help='Date to download in [YYYY-MM-DD] format\nsingle date or multiple dates separated by space\ndownload from 2020-01-01 if no argument is parsed')
-    parser.add_argument(
-        '-startDate', dest='startDate', type=match_date_regex,
-        help='Starting date to download in [YYYY-MM-DD] format')
-    parser.add_argument(
-        '-endDate', dest='endDate', type=match_date_regex,
-        help='Ending date to download in [YYYY-MM-DD] format')
-    parser.add_argument(
-        '-folder', dest='folder', type=check_directory,
-        help='Directory to store the downloaded data')
-    parser.add_argument(
-        '-skip-monthly', dest='skip_monthly', default=0, type=int, choices=[0, 1],
-        help='1 to skip downloading of monthly data, default 0')
-    parser.add_argument(
-        '-skip-daily', dest='skip_daily', default=0, type=int, choices=[0, 1],
-        help='1 to skip downloading of daily data, default 0')
-    parser.add_argument(
-        '-c', dest='checksum', default=0, type=int, choices=[0, 1],
-        help='1 to download checksum file, default 0')
-    parser.add_argument(
-        '-t', dest='type', default='spot', choices=TRADING_TYPE,
-        help='Valid trading types: {}'.format(TRADING_TYPE))
-
-    if parser_type == 'klines':
-        parser.add_argument(
-            '-i', dest='intervals', default=INTERVALS, nargs='+', choices=INTERVALS,
-            help='single kline interval or multiple intervals separated by space\n-i 1m 1w means to download klines interval of 1minute and 1week')
-
-    return parser
