@@ -1,46 +1,44 @@
 from typing import List, Dict
 from opa.harvest.ochlv_constant import *
+from opa.core.candlestick import Candlestick
 from zipfile import ZipFile
 from os import listdir
 from os.path import join
 import os
 
 
-def convert_hist_klines_websocket_to_stochlv_format(symbol: str, klines: List[str]) -> Dict:
+def hist_klines_websocket_to_candlestick(symbol: str, interval: str, klines: List[str]) -> Candlestick:
     """
-    Convert OCHLV in list representation to dictionnary representation.
+    Convert klines to candlestick object.
+    :param interval: time period of candlestick
     :param klines: OCHLV in list representation
-    :return: OCHLV in dictionnary representation
+    :return: c
     """
-    tochvl = {
-            KEY_SYMBOL: symbol,
-            KEY_CLOSE_TIME: klines[IDX_CLOSE_TIME],
-            KEY_OPEN: klines[IDX_OPEN],
-            KEY_CLOSE: klines[IDX_CLOSE],
-            KEY_HIGHT: klines[IDX_HIGHT],
-            KEY_LOW: klines[IDX_LOW],
-            KEY_VOLUME: klines[IDX_VOLUME]
-    }
-    return tochvl
+    return Candlestick(symbol, interval,
+                       open_price=klines[IDX_OPEN],
+                       close_price=klines[IDX_CLOSE],
+                       high=klines[IDX_HIGHT],
+                       low=klines[IDX_LOW],
+                       volume=klines[IDX_VOLUME],
+                       close_time=klines[IDX_CLOSE_TIME])
 
 
-def convert_stream_klines_to_stochlv_format(klines: Dict) -> Dict:
+def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
     """
-    Convert OCHLV in dictionnary representation from websocket to dictionnary representation.
+    Convert klines from websocket to candlestick object.
+    :param interval: time period of candlestick
     :param klines: OCHLV in list representation
-    :return: OCHLV in dictionnary representation
+    :return: time period of candlestick
     """
-    tochvl = {
-        KEY_SYMBOL: klines[KEY_SYMBOL],
-        KEY_CLOSE_TIME: klines[KEY_CLOSE_TIME],
-        KEY_OPEN: klines[KEY_OPEN],
-        KEY_CLOSE: klines[KEY_CLOSE],
-        KEY_HIGHT: klines[KEY_HIGHT],
-        KEY_LOW: klines[KEY_LOW],
-        KEY_VOLUME: klines[KEY_VOLUME]
-    }
 
-    return tochvl
+    return Candlestick(devise=klines[KEY_SYMBOL],
+                       intervalle=interval,
+                       open_price=klines[KEY_OPEN],
+                       close_price=klines[KEY_CLOSE],
+                       high=klines[KEY_HIGHT],
+                       low=klines[KEY_LOW],
+                       volume=klines[KEY_VOLUME],
+                       close_time=klines[KEY_CLOSE_TIME])
 
 
 def list_file(directory_path: str) -> List[str]:
