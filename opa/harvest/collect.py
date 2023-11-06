@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 from binance import AsyncClient, BinanceSocketManager
-from opa.storage.connector import InputOutputStream, CsvConnector
+from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
@@ -44,7 +44,9 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
             kline = kline_socket_msg[KEY_KLINE_CONTENT]
             if kline[KEY_FINAL_BAR]:
                 stochlv = convert_stream_klines_to_stochlv_format(kline)
-                output.write(stochlv, None)
+                print(stochlv)
+                output.write(stochlv, topic=stochlv[KEY_SYMBOL])
+
 
 
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -57,7 +59,7 @@ async def start_stream_data_collector(client: AsyncClient, symbol: str, interval
     :param output: Place where data will be saved.
     :return:
     """
-    await get_missing_data(client, symbol, interval, output)
+    #await get_missing_data(client, symbol, interval, output)
     await start_collecting(client, symbol, interval, output)
 
 
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     symbols = args.symbol
     intervals = args.interval
 
-    output = CsvConnector()
+    output = KafkaConnector()
     collect_hist_data(symbols, intervals, output)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(collect_stream_data(symbols, intervals, output))
