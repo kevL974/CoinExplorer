@@ -14,3 +14,9 @@ class Candlestick:
         import datetime
         date = datetime.datetime.fromtimestamp(self.close_time).strftime('%Y-%m-%d')
         return date
+
+    def key(self):
+        import datetime
+        date_key = datetime.datetime.fromtimestamp(self.close_time).strftime('%Y%m%d')
+        key= self.devise+"-"+self.intervalle+"#"+date_key+"#"+str(self.close_time)
+        return key
