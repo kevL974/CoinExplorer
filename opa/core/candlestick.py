@@ -1,10 +1,8 @@
-import json
-
 class Candlestick:
-    def __init__(self, devise: str, intervalle: str, open_price: float, close_price: float, high: float, low: float,
+    def __init__(self, symbols: str, intervals: str, open_price: float, close_price: float, high: float, low: float,
                  volume: float, close_time: int):
-        self.devise = devise
-        self.intervalle = intervalle
+        self.symbols = symbols
+        self.intervals = intervals
         self.open = open_price
         self.close = close_price
         self.high = high
@@ -19,8 +17,8 @@ class Candlestick:
 
     def key(self):
         import datetime
-        date_key = datetime.datetime.fromtimestamp(self.close_time).strftime('%Y%m%d')
-        key= self.devise+"-"+self.intervalle+"#"+date_key+"#"+str(self.close_time)
+        date_key = datetime.datetime.fromtimestamp(self.close_time/1000).strftime('%Y%m%d')
+        key= self.symbols+"-"+self.intervals+"#"+date_key+"#"+str(self.close_time)
         return key
 
     def __str__(self) -> str:

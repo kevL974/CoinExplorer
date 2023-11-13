@@ -29,11 +29,13 @@ def get_all_symbols(type):
     return list(map(lambda symbol: symbol['symbol'], json.loads(response)['symbols']))
 
 
-def download_file(base_path, file_name, folder=None):
+def download_file(base_path, file_name, date_range=None, folder=None):
     download_path = "{}{}".format(base_path, file_name)
     if folder:
         base_path = os.path.join(folder, base_path)
-
+    if date_range:
+        date_range = date_range.replace(" ", "_")
+        base_path = os.path.join(base_path, date_range)
     save_path = get_destination_dir(os.path.join(base_path, file_name), folder)
 
     if os.path.exists(save_path):
@@ -51,7 +53,6 @@ def download_file(base_path, file_name, folder=None):
         if length:
             length = int(length)
             blocksize = max(4096, length // 100)
-
         with open(save_path, 'wb') as out_file:
             dl_progress = 0
             print("\nFile Download: {}".format(save_path))
@@ -67,8 +68,7 @@ def download_file(base_path, file_name, folder=None):
 
     except urllib.error.HTTPError:
         print("\nFile not found: {}".format(download_url))
-        pass
-    return save_path
+        return save_path
 
 
 def convert_to_date_object(d):
