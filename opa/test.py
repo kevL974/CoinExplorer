@@ -13,7 +13,7 @@ from pandas import Series, DataFrame
 
 
 def hbase(data_csv: list):
-    con = hb.Connection("hbase-docker",9090)
+    con = hb.Connection("172.17.0.2",9090)
 
     con.open()
     if con.tables() == "":
@@ -74,5 +74,5 @@ csv = (['BTCUSDT', '1m', 4261.48, 4261.48, 4261.48, 4261.48, 1.775183, 150294245
            ['BTCUSDT', '1m', 4725.0, 4725.0, 4725.0, 4725.0, 0.47356, 1504224359999],
            ['BTCUSDT', '1m', 4725.0, 4725.0, 4725.0, 4725.0, 0.0, 1504224419999],
            ['BTCUSDT', '1m', 4378.49, 4378.49, 4378.49, 4378.49, 0.891882, 1506816059999])
-list_hbase = read(list_files_csv,["BTCUSDT"],["1m"])
-hbase(list_hbase)
+#list_hbase = read(list_files_csv,["BTCUSDT"],["1m"])
+hbase(list_files_csv)
