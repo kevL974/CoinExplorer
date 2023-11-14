@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 from binance import AsyncClient, BinanceSocketManager
-from opa.storage.connector import InputOutputStream, CsvConnector, HbaseConnector
+from opa.storage.connector import InputOutputStream, CsvConnector, HbaseConnector, KafkaConnector
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
