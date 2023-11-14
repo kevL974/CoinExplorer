@@ -3,11 +3,9 @@ import asyncio
 from binance import AsyncClient, BinanceSocketManager
 from opa.storage.connector import InputOutputStream, KafkaConnector,CsvConnector, HbaseConnector
 from opa.utils import *
-from opa.core.candlestick import Candlestick
 from opa.harvest.enums import *
 from typing import List
 from download_kline import download_monthly_klines
-from utility import get_path, get_destination_dir
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
 API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
