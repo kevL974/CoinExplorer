@@ -1,4 +1,5 @@
 import datetime
+import json
 
 class Candlestick:
     def __init__(self, symbols: str, intervals: str, open_price: float, close_price: float, high: float, low: float,
@@ -13,6 +14,7 @@ class Candlestick:
         self.close_time = close_time
 
     def date(self):
+        import datetime
         date = datetime.datetime.fromtimestamp(self.close_time).strftime('%Y-%m-%d')
         return date
 
@@ -24,7 +26,6 @@ class Candlestick:
     def __str__(self) -> str:
         dict_candlestick = self.__dict__
         return json.dumps(dict_candlestick)
-
 
     def to_hbase(self):
         return (self.key(), {'CANDLESTICKES:open': "'" + str(self.open) + "'",
