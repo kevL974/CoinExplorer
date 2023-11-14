@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List
 from kafka import KafkaProducer
+from opa.core.candlestick import Candlestick
 
 
 class InputOutputStream(ABC):
 
     @abstractmethod
-    def write(self, data: Dict, **options) -> None:
+    def write(self, data: Candlestick, **options) -> None:
         pass
 
     @abstractmethod
@@ -15,7 +16,7 @@ class InputOutputStream(ABC):
 
 
 class CsvConnector(InputOutputStream):
-    def write(self, data: Dict, **options) -> None:
+    def write(self, data: Candlestick, **options) -> None:
         print(data)
 
     def read(self, **options) -> List:
@@ -33,7 +34,7 @@ class KafkaConnector(InputOutputStream):
                                             value_serializer=valueserializer,
                                             api_version=(2, 8, 1))
 
-    def write(self, data: Dict, **options) -> None:
+    def write(self, data: Candlestick, **options) -> None:
         self.kafka_producer.send(value=data.__str__(), **options)
         self.kafka_producer.flush()
 

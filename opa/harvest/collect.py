@@ -49,7 +49,6 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
                 output.write(candlestick, topic=candlestick.devise)
 
 
-
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
     """
     Updates missing data from historical data and collect data from Binance web socket for symbol and interval given
@@ -117,7 +116,7 @@ if __name__ == "__main__":
     intervals = args.interval
 
     output = KafkaConnector()
-    #collect_hist_data(symbols, intervals, output)
+    collect_hist_data(symbols, intervals, output)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(collect_stream_data(symbols, intervals, output))
 
