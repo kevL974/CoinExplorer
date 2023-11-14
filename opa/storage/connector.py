@@ -45,25 +45,31 @@ class CsvConnector(InputOutputStream):
 
 class HbaseConnector(InputOutputStream):
 
-    def __init__(self):
+    def __init__(self,host="localhost",port=9090, table = "BINANCE3"):
         """
         Initialisation du client HBase
         """
-        con = hb.Connection("hbase-docker", 9090)
-        con.open()
+        self.host = host
+        self.port = port
+        self.table = table
+        self.con = hb.Connection(self.host, self.port)
 
-    def write(self, candlesticks: List,tables  : str, **options) -> None:
+    def write(self, candlesticks: List, **options) -> None:
         """
         utiliser le client  hbase pour inserer les données
         :param data:
         :param options:
         :return:
         """
-        self.con.create_tables('BINANCE', {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
-        table = self.con.tables("BINANCE")
+        self.con.create_table(self.table, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
+        self.table = self.con.table(self.table)
+        self.con.open()
+        print(self.con)
+
         for data in candlesticks:
             # data = 'BTCUSDT-1m#20170817#1502942459999',{'CANDLESTICKES:open': '4261.48', 'CANDLESTICKES:close': 4261.48, 'CANDLESTICKES:high': '4261.48', 'CANDLESTICKES:low': '4261.48', 'CANDLESTICKES:volume': '1.775183', 'CANDLESTICKES:close_time': '1502942459999'}
-            table.put(data[0], data[1])
+            print(data)
+            self.table.put(data[0], data[1])
 
     def read(self, **options) -> List:
         pass

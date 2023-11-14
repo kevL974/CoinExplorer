@@ -41,39 +41,50 @@ def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
                        close_time=klines[KEY_CLOSE_TIME])
 
 
-def list_file(directory_path: str) -> List[str]:
+def list_file(directory_path: str,extension : str) -> List[str]:
     """
     Returns the list of files to unzip present in the directory indicated in the variable directory_path.
     :param directory_path: Targerted directory
     :return: list of path.
     """
     files = []
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    directory_absolut_path = os.path.join(pwd, directory_path)
-    all_files_in_directory = listdir(directory_absolut_path)
+    all_files_in_directory = listdir(directory_path)
+    print(all_files_in_directory)
     for file in all_files_in_directory:
-        if file.find(".zip") >= 0:
+        if (file.find(extension) >= 0) & (os.path.isdir(file) == False):
             files.append(file)
+        else:
+            print("file à ne pas dezipper:", file)
 
+    print(files)
     return files
 
 
-def dezip(directory_path:  str, files: List[str]) -> None:
+def dezip(directory_path:  str) -> None:
     """
     Uncompresses zip files in directory given in parameter
     :param directory_path: directory where zip files will be uncompressed.
     :param files: paths of zip files
     :return:
     """
+    list_files_csv = []
+    list_files = list_file(directory_path, ".zip")
+    print(list_files)
     pwd = os.path.dirname(os.path.realpath(__file__))
     directory_absolut_path = os.path.join(pwd, directory_path)
-    for file in files:
-        file_path = join(directory_absolut_path, file)
+    i = 0
+
+    for i in range(len(list_files)):
+        file_path = join(directory_absolut_path, list_files[i])
         print(file_path)
         # ouvrir le fichier zip en mode lecture
         with ZipFile(file_path, 'r') as zip:
-
             # extraire tous les fichiers
             print('extraction...')
             zip.extractall(path=join(directory_absolut_path, "extract"))
             print('Terminé!')
+        list_files_csv.append(os.path.join(directory_absolut_path, "extract", list_files[i].replace('zip', 'csv')))
+
+    return list_files_csv
+
+         

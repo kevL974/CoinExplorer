@@ -76,8 +76,8 @@ def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOut
     #list_files_csv =['C:\\Users\\arnau\\Repo_GIT\\SEPT23-BDE-OPA\\opa\\harvest\\data/spot/monthly/klines/BTCUSDT/1m/extract\\BTCUSDT-1m-2017-08.csv']
     csv_read = CsvConnector()
     list_hbase = csv_read.read(list_files_csv,symbols, intervals)
-    hbase_write = HbaseConnector()
-    hbase_write.write(list_hbase,'BINANCE')
+    hbase_write = HbaseConnector(table='TEST')
+    hbase_write.write(list_hbase)
 
 
 
