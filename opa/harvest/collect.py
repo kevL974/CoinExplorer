@@ -1,8 +1,9 @@
 import argparse
 import asyncio
 from binance import AsyncClient, BinanceSocketManager
-from opa.storage.connector import InputOutputStream, CsvConnector
+from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
+from opa.core.candlestick import Candlestick
 from opa.harvest.enums import *
 from typing import List
 from download_kline import download_monthly_klines
@@ -22,8 +23,8 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     """
     klines = await client.get_historical_klines(symbol, interval, "1 years ago UTC")
     for kline in klines:
-        stochlv = convert_hist_klines_websocket_to_stochlv_format(symbol, kline)
-        output.write(stochlv, None)
+        candlestick = hist_klines_websocket_to_candlestick(symbol, interval, kline)
+        output.write(candlestick, None)
 
 
 async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -43,8 +44,9 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
             kline_socket_msg = await kscm.recv()
             kline = kline_socket_msg[KEY_KLINE_CONTENT]
             if kline[KEY_FINAL_BAR]:
-                stochlv = convert_stream_klines_to_stochlv_format(kline)
-                output.write(stochlv, None)
+                candlestick = stream_klines_to_candlestick(interval, kline)
+                print(candlestick)
+                output.write(candlestick, topic=candlestick.devise)
 
 
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -57,7 +59,7 @@ async def start_stream_data_collector(client: AsyncClient, symbol: str, interval
     :param output: Place where data will be saved.
     :return:
     """
-    await get_missing_data(client, symbol, interval, output)
+    #await get_missing_data(client, symbol, interval, output)
     await start_collecting(client, symbol, interval, output)
 
 
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     symbols = args.symbol
     intervals = args.interval
 
-    output = CsvConnector()
+    output = KafkaConnector()
     collect_hist_data(symbols, intervals, output)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(collect_stream_data(symbols, intervals, output))
