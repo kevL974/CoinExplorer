@@ -58,21 +58,19 @@ class HbaseTableConnector(InputOutputStream):
         self.host = host
         self.port = port
         self.table_name = table_name
-        self.con = hb.Connection(self.host, self.port)
+        self.pool = hb.ConnectionPool(size=3, host=self.host, port=self.port)
         self.__create_if_not_exist_table()
 
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
-        table = self.con.table(self.table_name)
-        self.con.open()
-        try:
-            with table.batch(**options) as b:
-                for candlestick in candlesticks:
-                    b.put(candlestick.key(), candlestick.to_hbase())
-        except ValueError as e:
-            print(f"{e}")
-            pass
-
-        self.con.close()
+        with self.pool.connection() as con:
+            table = con.table(self.table_name)
+            try:
+                with table.batch(**options) as b:
+                    for candlestick in candlesticks:
+                        b.put(candlestick.key(), candlestick.to_hbase())
+            except IOError as e:
+                print(f"{e}")
+                pass
 
     def read(self, **options) -> List:
         pass
@@ -82,11 +80,10 @@ class HbaseTableConnector(InputOutputStream):
         Create table with Hbase client  if not exist.
         :return:
         """
-        self.con.open()
-        list_tables = self.con.tables()
-        if self.table_name.encode("utf-8") not in list_tables:
-            self.con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
-        self.con.close()
+        with self.pool.connection() as con:
+            list_tables = con.tables()
+            if self.table_name.encode("utf-8") not in list_tables:
+                con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
 
 
 class KafkaConnector(InputOutputStream):
