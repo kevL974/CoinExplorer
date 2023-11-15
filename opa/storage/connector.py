@@ -64,10 +64,14 @@ class HbaseTableConnector(InputOutputStream):
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         table = self.con.table(self.table_name)
         self.con.open()
-        batch = table.batch()
-        for candlestick in candlesticks:
-            batch.put(candlestick.key(), candlestick.to_hbase())
-        batch.send()
+        try:
+            with table.batch(**options) as b:
+                for candlestick in candlesticks:
+                    b.put(candlestick.key(), candlestick.to_hbase())
+        except ValueError as e:
+            print(f"{e}")
+            pass
+
         self.con.close()
 
     def read(self, **options) -> List:

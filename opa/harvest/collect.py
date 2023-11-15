@@ -6,6 +6,7 @@ from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
 from download_kline import download_monthly_klines
+from tqdm import tqdm
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
 API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
@@ -21,9 +22,11 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     :return:
     """
     klines = await client.get_historical_klines(symbol, interval, "1 years ago UTC")
+    candlesticks = []
     for kline in klines:
-        candlestick = hist_klines_websocket_to_candlestick(symbol, interval, kline)
-        output.write_lines(candlestick)
+        candlesticks.append(hist_klines_websocket_to_candlestick(symbol, interval, kline))
+
+    output.write_lines(candlesticks, batch_size=500)
 
 
 async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -72,9 +75,9 @@ def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOut
 
     for symbol, interval, path in paths:
         list_files_csv = dezip(path)
-        for csv_files in list_files_csv:
+        for csv_files in tqdm(list_files_csv):
             list_hbase = csv_to_candlesticks(symbol, interval, csv_files)
-            output.write_lines(list_hbase)
+            output.write_lines(list_hbase, batch_size=500)
 
 
 async def collect_stream_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
