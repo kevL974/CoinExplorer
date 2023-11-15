@@ -41,11 +41,31 @@ def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
                        volume=klines[KEY_VOLUME],
                        close_time=klines[KEY_CLOSE_TIME])
 
-def csv_to_candlesticks(symbol:str,  interval:str, csv_filepath:str) -> List[Candlestick]:
-    pass
+
+def csv_to_candlesticks(symbol: str,  interval: str, csv_filepath: str) -> List[Candlestick]:
+    """
+    Read csv file that contents candlesticks and  transforms them to list Candlestick object.
+    :param symbol: symbol of candlestick in csv file
+    :param interval: interval of candlestick in csv file
+    :param csv_filepath: path to csv file
+    :return: a list of Candlestick object
+    """
+    candlesticks = []
+    with open(csv_filepath, newline='\n') as csvfile:
+        csvreader = csv.reader(csvfile, delimiter=',')
+        for row in csvreader:
+            candlesticks.append(Candlestick(symbol=symbol,
+                                            interval=interval,
+                                            open_price=float(row[1]),
+                                            high=float(row[2]),
+                                            low=float(row[3]),
+                                            close_price=float(row[4]),
+                                            volume=float(row[5]),
+                                            close_time=int(row[6])))
+    return candlesticks
 
 
-def list_file(directory_path: str,extension : str) -> List[str]:
+def list_file(directory_path: str,extension: str) -> List[str]:
     """
     Returns the list of files to unzip present in the directory indicated in the variable directory_path.
     :param directory_path: Targerted directory
@@ -64,7 +84,7 @@ def list_file(directory_path: str,extension : str) -> List[str]:
     return files
 
 
-def dezip(directory_path:  str) -> None:
+def dezip(directory_path:  str) -> List[str]:
     """
     Uncompresses zip files in directory given in parameter
     :param directory_path: directory where zip files will be uncompressed.
