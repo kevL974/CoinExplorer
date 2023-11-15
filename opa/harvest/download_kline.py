@@ -5,7 +5,7 @@ import os
 def download_monthly_klines(symbols, intervals, folder="", checksum=""):
     current = 0
     num_symbols = len(symbols)
-
+    list_paths = []
     print("Found {} symbols".format(num_symbols))
     pwd = os.path.dirname(os.path.realpath(__file__))
     for symbol in symbols:
@@ -27,7 +27,7 @@ def download_monthly_klines(symbols, intervals, folder="", checksum=""):
                             checksum_file_name = "{}-{}-{}-{}.zip.CHECKSUM".format(symbol.upper(), interval, year,
                                                                                    '{:02d}'.format(month))
                             download_file(checksum_path, checksum_file_name, folder)
+            list_paths.append((symbol,  interval, paths))
 
         current += 1
-    print("Voici le path de download",paths)
-    return paths
+    return list_paths

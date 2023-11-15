@@ -68,12 +68,13 @@ def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOut
     :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
     :return:
     """
-    path = download_monthly_klines(symbols, intervals)
-    print(path)
-    list_files_csv = dezip(path)
-    csv_read = CsvConnector()
-    list_hbase = csv_read.read(list_files_csv,symbols, intervals)
-    output.write_lines(list_hbase)
+    paths = download_monthly_klines(symbols, intervals)
+
+    for symbol, interval, path in paths:
+        list_files_csv = dezip(path)
+        for csv_files in list_files_csv:
+            list_hbase = csv_to_candlesticks(symbol, interval, csv_files)
+            output.write_lines(list_hbase)
 
 
 async def collect_stream_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
