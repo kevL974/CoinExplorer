@@ -5,6 +5,7 @@ from zipfile import ZipFile
 from os import listdir
 from os.path import join
 import os
+import csv
 
 
 def hist_klines_websocket_to_candlestick(symbol: str, interval: str, klines: List[str]) -> Candlestick:
@@ -31,14 +32,17 @@ def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
     :return: time period of candlestick
     """
 
-    return Candlestick(devise=klines[KEY_SYMBOL],
-                       intervalle=interval,
+    return Candlestick(symbol=klines[KEY_SYMBOL],
+                       interval=interval,
                        open_price=klines[KEY_OPEN],
                        close_price=klines[KEY_CLOSE],
                        high=klines[KEY_HIGHT],
                        low=klines[KEY_LOW],
                        volume=klines[KEY_VOLUME],
                        close_time=klines[KEY_CLOSE_TIME])
+
+def csv_to_candlesticks(symbol:str,  interval:str, csv_filepath:str) -> List[Candlestick]:
+    pass
 
 
 def list_file(directory_path: str,extension : str) -> List[str]:

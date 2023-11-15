@@ -9,7 +9,7 @@ import happybase as hb
 class InputOutputStream(ABC):
 
     @abstractmethod
-    def write(self, data: Candlestick, **options) -> None:
+    def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         pass
 
     @abstractmethod
@@ -18,8 +18,8 @@ class InputOutputStream(ABC):
 
 
 class CsvConnector(InputOutputStream):
-    def write(self, data: Candlestick, **options) -> None:
-        print(data)
+    def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
+        print(candlesticks)
 
     def read(self,list_files_csv: str,symbols:str, intervals:str) -> List:
         list_hbase_full = []
@@ -54,10 +54,10 @@ class HbaseConnector(InputOutputStream):
         self.table = table
         self.con = hb.Connection(self.host, self.port)
 
-    def write(self, candlesticks: List, **options) -> None:
+    def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         """
         utiliser le client  hbase pour inserer les données
-        :param data:
+        :param candlesticks:
         :param options:
         :return:
         """
@@ -66,10 +66,10 @@ class HbaseConnector(InputOutputStream):
         self.con.open()
         print(self.con)
 
-        for data in candlesticks:
+        for candlestick in candlesticks:
             # data = 'BTCUSDT-1m#20170817#1502942459999',{'CANDLESTICKES:open': '4261.48', 'CANDLESTICKES:close': 4261.48, 'CANDLESTICKES:high': '4261.48', 'CANDLESTICKES:low': '4261.48', 'CANDLESTICKES:volume': '1.775183', 'CANDLESTICKES:close_time': '1502942459999'}
-            print(data)
-            self.table.put(data[0], data[1])
+            print(candlestick)
+            self.table.put(candlestick[0], candlestick[1])
 
     def read(self, **options) -> List:
         pass
@@ -86,8 +86,10 @@ class KafkaConnector(InputOutputStream):
                                             value_serializer=valueserializer,
                                             api_version=(2, 8, 1))
 
-    def write(self, data: Candlestick, **options) -> None:
-        self.kafka_producer.send(value=data.__str__(), **options)
+    def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
+        for candlestick in candlesticks:
+            self.kafka_producer.send(value=candlestick.__str__(), **options)
+
         self.kafka_producer.flush()
 
     def read(self, options) -> List:

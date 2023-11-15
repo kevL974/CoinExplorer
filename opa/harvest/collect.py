@@ -23,7 +23,7 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     klines = await client.get_historical_klines(symbol, interval, "1 years ago UTC")
     for kline in klines:
         candlestick = hist_klines_websocket_to_candlestick(symbol, interval, kline)
-        output.write(candlestick, None)
+        output.write_lines(candlestick)
 
 
 async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -44,8 +44,7 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
             kline = kline_socket_msg[KEY_KLINE_CONTENT]
             if kline[KEY_FINAL_BAR]:
                 candlestick = stream_klines_to_candlestick(interval, kline)
-                print(candlestick)
-                output.write(candlestick, topic=candlestick.devise)
+                output.write_lines([candlestick], topic=candlestick.symbol)
 
 
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -72,13 +71,9 @@ def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOut
     path = download_monthly_klines(symbols, intervals)
     print(path)
     list_files_csv = dezip(path)
-
-    #list_files_csv =['C:\\Users\\arnau\\Repo_GIT\\SEPT23-BDE-OPA\\opa\\harvest\\data/spot/monthly/klines/BTCUSDT/1m/extract\\BTCUSDT-1m-2017-08.csv']
     csv_read = CsvConnector()
     list_hbase = csv_read.read(list_files_csv,symbols, intervals)
-    hbase_write = HbaseConnector(table='TEST')
-    hbase_write.write(list_hbase)
-
+    output.write_lines(list_hbase)
 
 
 async def collect_stream_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
@@ -119,9 +114,9 @@ if __name__ == "__main__":
     symbols = args.symbol
     intervals = args.interval
 
-    output_csv = CsvConnector()
+    output_hbase = HbaseConnector(table='TEST')
     output_kafka = KafkaConnector()
-    collect_hist_data(symbols, intervals, output_csv)
+    collect_hist_data(symbols, intervals, output_hbase)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
 
