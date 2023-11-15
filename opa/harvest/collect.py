@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 from binance import AsyncClient, BinanceSocketManager
-from opa.storage.connector import InputOutputStream, CsvConnector, HbaseConnector, KafkaConnector
+from opa.storage.connector import InputOutputStream, CsvConnector, HbaseTableConnector, KafkaConnector
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     symbols = args.symbol
     intervals = args.interval
 
-    output_hbase = HbaseConnector(table='TEST')
+    output_hbase = HbaseTableConnector(table_name='BINANCE')
     output_kafka = KafkaConnector()
     collect_hist_data(symbols, intervals, output_hbase)
     loop = asyncio.get_event_loop()

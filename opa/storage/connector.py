@@ -10,6 +10,12 @@ class InputOutputStream(ABC):
 
     @abstractmethod
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
+        """
+        Write list of Candlestick objects to the connector
+        :param candlesticks: a list of Candlestick objects
+        :param options: optional parameters
+        :return:
+        """
         pass
 
     @abstractmethod
@@ -43,36 +49,40 @@ class CsvConnector(InputOutputStream):
         return list_hbase_full
 
 
-class HbaseConnector(InputOutputStream):
+class HbaseTableConnector(InputOutputStream):
 
-    def __init__(self,host="localhost",port=9090, table = "BINANCE3"):
+    def __init__(self, host="localhost", port=9090, table_name="BINANCE"):
         """
-        Initialisation du client HBase
+        Initialize Hbase client  and create table if not already exist
         """
         self.host = host
         self.port = port
-        self.table = table
+        self.table_name = table_name
         self.con = hb.Connection(self.host, self.port)
+        self.__create_if_not_exist_table()
 
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
-        """
-        utiliser le client  hbase pour inserer les données
-        :param candlesticks:
-        :param options:
-        :return:
-        """
-        self.con.create_table(self.table, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
-        self.table = self.con.table(self.table)
+        table = self.con.table(self.table_name)
         self.con.open()
-        print(self.con)
-
+        batch = table.batch()
         for candlestick in candlesticks:
-            # data = 'BTCUSDT-1m#20170817#1502942459999',{'CANDLESTICKES:open': '4261.48', 'CANDLESTICKES:close': 4261.48, 'CANDLESTICKES:high': '4261.48', 'CANDLESTICKES:low': '4261.48', 'CANDLESTICKES:volume': '1.775183', 'CANDLESTICKES:close_time': '1502942459999'}
-            print(candlestick)
-            self.table.put(candlestick[0], candlestick[1])
+            batch.put(candlestick.key(), candlestick.to_hbase())
+        batch.send()
+        self.con.close()
 
     def read(self, **options) -> List:
         pass
+
+    def __create_if_not_exist_table(self) -> None:
+        """
+        Create table with Hbase client  if not exist.
+        :return:
+        """
+        self.con.open()
+        list_tables = self.con.tables()
+        if self.table_name.encode("utf-8") not in list_tables:
+            self.con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
+        self.con.close()
 
 
 class KafkaConnector(InputOutputStream):
