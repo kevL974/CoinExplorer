@@ -2,3 +2,4 @@ python-binance
 happybase
 kafka-python
 pytest
+tqdm
