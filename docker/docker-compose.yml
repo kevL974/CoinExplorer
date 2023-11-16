@@ -31,3 +31,26 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
+
+  hbase:
+    image: opa_hbase:latest
+    depends_on:
+      - zookeeper
+    volumes:
+      - /data:/data
+    ports:
+      - "9090:9090"
+      - "16000:16000"
+      - "16010:16010"
+      - "16020:16020"
+      - "16030:16030"
+
+  jupyter:
+    image: jupyter/datascience-notebook:latest
+    depends_on:
+      - hbase
+      - kafka
+    volumes:
+      - ../notebook:/home/jovyan/work
+    ports:
+      - "10000:8888"
