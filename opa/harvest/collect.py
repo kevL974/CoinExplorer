@@ -103,7 +103,7 @@ if __name__ == "__main__":
                         help='Symbol that will be extracted in string format. ex :\'BTCUSDT\'',
                         nargs='+',
                         type=str,
-                        choices=['BTCUSDT', 'ETHBTC'],
+                        choices=['BTCUSDT', 'ETHBTC', 'ETHUSDT'],
                         required=True)
     parser.add_argument('-i', '--interval',
                         help='Symbol that will be extracted',
@@ -111,6 +111,8 @@ if __name__ == "__main__":
                         type=str,
                         choices=INTERVALS,
                         required=True)
+    parser.add_argument('--skip_hist_data', help='Skip historic data downloading', action='store_true')
+    parser.add_argument('--skip_stream_data', help='Skip streaming data gathering', action='store_true')
     parser.add_argument('--testnet', help='use binance testnet platform', action='store_true')
     parser.add_argument('--debug', help='activate debug mode', action='store_true')
     args = parser.parse_args()
@@ -120,7 +122,11 @@ if __name__ == "__main__":
 
     output_hbase = HbaseTableConnector(table_name='BINANCE')
     output_kafka = KafkaConnector()
-    collect_hist_data(symbols, intervals, output_hbase)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
+
+    if not args.skip_hist_data:
+        collect_hist_data(symbols, intervals, output_hbase)
+
+    if not args.skip_stream_data:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
 
