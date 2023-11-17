@@ -3,3 +3,4 @@ happybase
 kafka-python
 pytest
 tqdm
+pyspark
