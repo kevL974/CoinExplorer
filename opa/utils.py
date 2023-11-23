@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from opa.harvest.ochlv_constant import *
 from opa.core.candlestick import Candlestick
 from zipfile import ZipFile
@@ -111,4 +111,23 @@ def dezip(directory_path:  str) -> List[str]:
 
     return list_files_csv
 
-         
+
+def is_valid_connection_setting_format(connection_settings: str) -> bool:
+    if connection_settings:
+        return ":" in connection_settings
+    return False
+
+
+def parse_connection_settings(connection_settings: str) -> Tuple[str, int]:
+    """
+    Parse connection settings in string  format
+    :param connection_settings: a string like '<host>:<port>'
+    :return: return Tuple(host,port)
+    """
+    if not is_valid_connection_setting_format(connection_settings):
+        raise ValueError(f"Bad connection settings {connection_settings}")
+
+    settings = connection_settings.split(":")
+    host = settings[0]
+    port = int(settings[1])
+    return host, port
