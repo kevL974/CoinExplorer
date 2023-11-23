@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
 import pandas as pd
 import happybase as hb
@@ -91,11 +91,19 @@ class KafkaConnector(InputOutputStream):
     def __init__(self,
                  bootstrapservers: str = "localhost:9092",
                  clientid: str = "opa_collector",
-                 valueserializer=lambda v: v.encode("utf-8")):
+                 value_serializer=lambda v: v.encode("utf-8"),
+                 value_deserializer=lambda v: v.decode("utf-8"),
+                 api_version=(2, 8, 1)):
+        self.bootstrap_servers = bootstrapservers
+        self.client_id = clientid
+        self.value_serializer = value_serializer
+        self.value_deserializer = value_deserializer
+        self.api_version = api_version
+
         self.kafka_producer = KafkaProducer(bootstrap_servers=bootstrapservers,
                                             client_id=clientid,
-                                            value_serializer=valueserializer,
-                                            api_version=(2, 8, 1))
+                                            value_serializer=value_serializer,
+                                            api_version=api_version)
 
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         for candlestick in candlesticks:
@@ -103,5 +111,5 @@ class KafkaConnector(InputOutputStream):
 
         self.kafka_producer.flush()
 
-    def read(self, options) -> List:
+    def read(self, options) -> Dict:
         pass
