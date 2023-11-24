@@ -65,6 +65,22 @@ def csv_to_candlesticks(symbol: str,  interval: str, csv_filepath: str) -> List[
     return candlesticks
 
 
+def dict_to_candlesticks(msg: Dict) -> Candlestick:
+    """
+    Candlestick in dictionnary format to Candlestick object.
+    :param msg: a dictionnary with Candlestick attibuts as keys.
+    :return: a Candlestick object.
+    """
+    a=msg
+    return Candlestick(symbol=msg["symbol"],
+                       interval=msg["interval"],
+                       open_price=float(msg["open"]),
+                       close_price=float(msg["close"]),
+                       high=float(msg["high"]),
+                       low=float(msg["low"]),
+                       volume=float(msg["volume"]),
+                       close_time=int(msg["close_time"]))
+
 def list_file(directory_path: str,extension: str) -> List[str]:
     """
     Returns the list of files to unzip present in the directory indicated in the variable directory_path.

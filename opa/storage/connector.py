@@ -19,18 +19,30 @@ class InputOutputStream(ABC):
         pass
 
     @abstractmethod
+    def write(self, candlestick: Candlestick, **options) -> None:
+        """
+        Write a single Candlestick object to  the connector.
+        :param candlestick: a Candlestick object
+        :param options: optional  parameters
+        :return:
+        """
+
+    @abstractmethod
     def read(self, **options) -> List:
         pass
 
 
 class CsvConnector(InputOutputStream):
+    def write(self, candlestick: Candlestick, **options) -> None:
+        pass
+
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         print(candlesticks)
 
-    def read(self,list_files_csv: str,symbols:str, intervals:str) -> List:
+    def read(self, list_files_csv: str, symbols: str, intervals: str) -> List:
         list_hbase_full = []
         for path_file in list_files_csv:
-            print("Lecture du fichier: ",path_file)
+            print("Lecture du fichier: ", path_file)
             csv = pd.read_csv(path_file, delimiter=",", header=None)
             cols = [1, 2, 3, 4, 5, 6]
             data = csv[cols]
@@ -50,6 +62,9 @@ class CsvConnector(InputOutputStream):
 
 
 class HbaseTableConnector(InputOutputStream):
+
+    def write(self, candlestick: Candlestick, **options) -> None:
+        pass
 
     def __init__(self, host="localhost", port=9090, table_name="BINANCE"):
         """
@@ -88,6 +103,9 @@ class HbaseTableConnector(InputOutputStream):
 
 class KafkaConnector(InputOutputStream):
 
+    ONE_CONS_TO_ALL_TOPICS: int = 1
+    ONE_CONS_TO_ONE_TOPIC: int = 0
+
     def __init__(self,
                  bootstrapservers: str = "localhost:9092",
                  clientid: str = "opa_collector",
@@ -111,5 +129,28 @@ class KafkaConnector(InputOutputStream):
 
         self.kafka_producer.flush()
 
-    def read(self, options) -> Dict:
+    def write(self, candlestick: Candlestick, **options) -> None:
         pass
+
+    def read(self, **options) -> Dict:
+        topics = options.get("topics", [])
+        mode = options.get("mode", self.ONE_CONS_TO_ALL_TOPICS)
+        consumers = {}
+        if mode == self.ONE_CONS_TO_ALL_TOPICS:
+            key = "".join(str(topic) + "_" for topic in topics)
+            consumer = KafkaConsumer(bootstrap_servers=self.bootstrap_servers,
+                                     client_id=self.client_id,
+                                     value_deserializer=self.value_deserializer)
+            consumer.subscribe(topics)
+            consumers[key] = consumer
+
+        elif mode == self.ONE_CONS_TO_ONE_TOPIC:
+            for topic_i in topics:
+                consumers[topic_i] = KafkaConsumer(topics=topic_i,
+                                                   bootstrap_servers=self.bootstrap_servers,
+                                                   client_id=self.client_id,
+                                                   value_deserializer=self.value_deserializer)
+        else:
+            raise ValueError("Bad mode argument")
+
+        return consumers

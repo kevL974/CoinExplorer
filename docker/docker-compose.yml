@@ -16,7 +16,7 @@ services:
       DOCKER_API_VERSION: 1.22
       KAFKA_ADVERTISED_HOST_NAME: 192.168.85.129
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "BTCUSDT:2:3,ETHBTC:2:3"
+      KAFKA_CREATE_TOPICS: "BTCUSDT:2:3,ETHUSDT:2:3"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
