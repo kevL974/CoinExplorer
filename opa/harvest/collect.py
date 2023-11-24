@@ -26,7 +26,7 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     for kline in klines:
         candlesticks.append(hist_klines_websocket_to_candlestick(symbol, interval, kline))
 
-    output.write_lines(candlesticks, batch_size=500)
+    output.write_lines(candlesticks,topic=candlesticks[0].symbol)
 
 
 async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -47,7 +47,7 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
             kline = kline_socket_msg[KEY_KLINE_CONTENT]
             if kline[KEY_FINAL_BAR]:
                 candlestick = stream_klines_to_candlestick(interval, kline)
-                output.write_lines([candlestick], topic=candlestick.symbol)
+                output.write(candlestick, topic=candlestick.symbol)
 
 
 async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
@@ -60,7 +60,7 @@ async def start_stream_data_collector(client: AsyncClient, symbol: str, interval
     :param output: Place where data will be saved.
     :return:
     """
-    #await get_missing_data(client, symbol, interval, output)
+    await get_missing_data(client, symbol, interval, output)
     await start_collecting(client, symbol, interval, output)
 
 

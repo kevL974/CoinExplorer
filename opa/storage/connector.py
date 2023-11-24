@@ -63,9 +63,6 @@ class CsvConnector(InputOutputStream):
 
 class HbaseTableConnector(InputOutputStream):
 
-    def write(self, candlestick: Candlestick, **options) -> None:
-        pass
-
     def __init__(self, host="localhost", port=9090, table_name="BINANCE"):
         """
         Initialize Hbase client  and create table if not already exist
@@ -83,6 +80,15 @@ class HbaseTableConnector(InputOutputStream):
                 with table.batch(**options) as b:
                     for candlestick in candlesticks:
                         b.put(candlestick.key(), candlestick.to_hbase())
+            except IOError as e:
+                print(f"{e}")
+                pass
+
+    def write(self, candlestick: Candlestick, **options) -> None:
+        with self.pool.connection() as con:
+            table = con.table(self.table_name)
+            try:
+                table.put(candlestick.key(), candlestick.to_hbase())
             except IOError as e:
                 print(f"{e}")
                 pass
@@ -125,12 +131,11 @@ class KafkaConnector(InputOutputStream):
 
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         for candlestick in candlesticks:
-            self.kafka_producer.send(value=candlestick.__str__(), **options)
-
-        self.kafka_producer.flush()
+            self.write(candlestick, **options)
 
     def write(self, candlestick: Candlestick, **options) -> None:
-        pass
+        self.kafka_producer.send(value=candlestick.__str__(), **options)
+        self.kafka_producer.flush()
 
     def read(self, **options) -> Dict:
         topics = options.get("topics", [])
@@ -140,7 +145,8 @@ class KafkaConnector(InputOutputStream):
             key = "".join(str(topic) + "_" for topic in topics)
             consumer = KafkaConsumer(bootstrap_servers=self.bootstrap_servers,
                                      client_id=self.client_id,
-                                     value_deserializer=self.value_deserializer)
+                                     value_deserializer=self.value_deserializer,
+                                     auto_offset_reset='earliest')
             consumer.subscribe(topics)
             consumers[key] = consumer
 
@@ -149,7 +155,8 @@ class KafkaConnector(InputOutputStream):
                 consumers[topic_i] = KafkaConsumer(topics=topic_i,
                                                    bootstrap_servers=self.bootstrap_servers,
                                                    client_id=self.client_id,
-                                                   value_deserializer=self.value_deserializer)
+                                                   value_deserializer=self.value_deserializer,
+                                                   auto_offset_reset='earliest')
         else:
             raise ValueError("Bad mode argument")
 

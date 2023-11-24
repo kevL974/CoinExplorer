@@ -6,11 +6,26 @@ import argparse
 import json
 
 
+def message_consummable(consumer: KafkaConsumer):
+    try:
+        for message in consumer:
+            yield message
+    except KeyboardInterrupt:
+        consumer.close()
+
+
 async def store_to_database(consumer: KafkaConsumer, output: InputOutputStream) -> None:
-    for msg in consumer:
+    """
+    Consumes data from Kafka topic and sends it to ouput.
+    :param consumer: a Kafka consumer
+    :param output: InputOutputStream object, can be HBaseTableConnector for exemple.
+    :return:
+    """
+
+    for msg in message_consummable(consumer):
         print(msg.value)
         candlestick = dict_to_candlesticks(json.loads(msg.value))
-        output.write_lines([candlestick], batch_size=10)
+        output.write(candlestick)
 
 
 async def process_stream_data(consumers: Dict[str, KafkaConsumer], output: InputOutputStream) -> None:
