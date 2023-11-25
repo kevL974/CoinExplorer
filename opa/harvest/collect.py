@@ -111,6 +111,14 @@ if __name__ == "__main__":
                         type=str,
                         choices=INTERVALS,
                         required=True)
+    parser.add_argument('-k', '--kafka',
+                        help='kafka connection setting : -k <ip_boostrapserver>:<port_bootstrapserver>',
+                        type=str,
+                        required=True)
+    parser.add_argument('-d', '--database',
+                        help='database connection setting : -d <ip_database>:<port_database>',
+                        type=str,
+                        required=True)
     parser.add_argument('--skip_hist_data', help='Skip historic data downloading', action='store_true')
     parser.add_argument('--skip_stream_data', help='Skip streaming data gathering', action='store_true')
     parser.add_argument('--testnet', help='use binance testnet platform', action='store_true')
@@ -119,9 +127,11 @@ if __name__ == "__main__":
 
     symbols = args.symbol
     intervals = args.interval
+    kafka_host, kafka_port = parse_connection_settings(args.kafka)
+    db_host, db_port = parse_connection_settings(args.database)
 
-    output_hbase = HbaseTableConnector(table_name='BINANCE')
-    output_kafka = KafkaConnector()
+    output_hbase = HbaseTableConnector(host=db_host, port=db_port, table_name='BINANCE')
+    output_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_producer")
 
     if not args.skip_hist_data:
         collect_hist_data(symbols, intervals, output_hbase)
