@@ -1,11 +1,11 @@
 import argparse
 import asyncio
 from binance import AsyncClient, BinanceSocketManager
-from opa.storage.connector import InputOutputStream, CsvConnector, HbaseTableConnector, KafkaConnector
+from opa.storage.connector import InputOutputStream, HbaseTableConnector, KafkaConnector
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
-from download_kline import download_monthly_klines
+from opa.harvest.download_kline import download_monthly_klines
 from tqdm import tqdm
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")

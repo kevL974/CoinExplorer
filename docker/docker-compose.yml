@@ -1,17 +1,26 @@
-version: '3.2'
+version: '3.9'
 services:
   zookeeper:
     image: wurstmeister/zookeeper
+    networks:
+      - opa_network
     ports:
       - "2181:2181"
     restart: unless-stopped
 
   kafka:
     image: wurstmeister/kafka
+    networks:
+      - opa_network
     depends_on:
       - zookeeper
     ports:
       - "9092-9094:9092"
+    healthcheck:
+      test: ["CMD", "./opt/kafka/bin/kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     environment:
       DOCKER_API_VERSION: 1.22
       KAFKA_ADVERTISED_HOST_NAME: 192.168.85.129
@@ -23,6 +32,8 @@ services:
 
   kafkaui:
     image: provectuslabs/kafka-ui
+    networks:
+      - opa_network
     depends_on:
       - kafka
       - zookeeper
@@ -34,8 +45,8 @@ services:
 
   hbase:
     image: opa_hbase:latest
-    depends_on:
-      - zookeeper
+    networks:
+      - opa_network
     volumes:
       - /data:/data
     ports:
@@ -44,9 +55,16 @@ services:
       - "16010:16010"
       - "16020:16020"
       - "16030:16030"
+    healthcheck:
+      test: ["CMD", "nc", "-zv", "localhost", "9090"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   jupyter:
     image: jupyter/datascience-notebook:latest
+    networks:
+      - opa_network
     depends_on:
       - hbase
       - kafka
@@ -54,3 +72,21 @@ services:
       - ../notebook:/home/jovyan/work
     ports:
       - "10000:8888"
+
+  collect:
+    image: opa_collect:latest
+    networks:
+      - opa_network
+    depends_on:
+      hbase:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+networks:
+  opa_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1

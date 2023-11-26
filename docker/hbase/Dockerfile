@@ -5,6 +5,7 @@ FROM openjdk:8-jdk
 ENV HBASE_VERSION 2.5.5
 ENV HBASE_HOME /opt/hbase
 
+RUN apt-get update  &&  apt-get  install -y netcat
 # Télécharger HBase et l'installer
 RUN wget https://dlcdn.apache.org/hbase/stable/hbase-${HBASE_VERSION}-bin.tar.gz && \
     tar -xvf hbase-${HBASE_VERSION}-bin.tar.gz -C /opt/ && \
@@ -12,7 +13,7 @@ RUN wget https://dlcdn.apache.org/hbase/stable/hbase-${HBASE_VERSION}-bin.tar.gz
     rm hbase-${HBASE_VERSION}-bin.tar.gz
 
 # Ajouter le fichier de configuration HBase
-COPY hbase-site.xml ${HBASE_HOME}/conf/
+COPY docker/hbase/hbase-site.xml ${HBASE_HOME}/conf/
 
 # Exposer les ports nécessaires
 EXPOSE 16000 16010 16020 16030 9090
