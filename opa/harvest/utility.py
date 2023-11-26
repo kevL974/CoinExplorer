@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import urllib.request
 from argparse import ArgumentTypeError
-from enums import *
+from opa.harvest.enums import *
 
 
 def get_destination_dir(file_url, folder=None):

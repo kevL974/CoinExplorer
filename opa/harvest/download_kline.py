@@ -1,5 +1,5 @@
-from enums import *
-from utility import download_file, convert_to_date_object, get_path
+from opa.harvest.enums import *
+from opa.harvest.utility import download_file, convert_to_date_object, get_path
 import os
 
 def download_monthly_klines(symbols, intervals, folder="", checksum=""):
