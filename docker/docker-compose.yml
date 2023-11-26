@@ -71,10 +71,11 @@ services:
     volumes:
       - ../notebook:/home/jovyan/work
     ports:
-      - "10000:8888"
+      - "8888:8888"
 
   collect:
     image: opa_collect:latest
+    command: -s BTCUSDT ETHUSDT -i 1m 15m
     networks:
       - opa_network
     depends_on:
