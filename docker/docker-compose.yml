@@ -75,7 +75,7 @@ services:
 
   collect:
     image: opa_collect:latest
-    command: -s BTCUSDT ETHUSDT -i 1m 15m
+    command: -s ETHUSDT -i 1m 15m
     networks:
       - opa_network
     depends_on:

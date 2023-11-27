@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
+from opa.utils import retry_connection_on_brokenpipe
 import pandas as pd
 import happybase as hb
 
@@ -73,16 +74,13 @@ class HbaseTableConnector(InputOutputStream):
         self.pool = hb.ConnectionPool(size=3, host=self.host, port=self.port)
         self.__create_if_not_exist_table()
 
+    @retry_connection_on_brokenpipe(5)
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
         with self.pool.connection() as con:
             table = con.table(self.table_name)
-            try:
-                with table.batch(**options) as b:
-                    for candlestick in candlesticks:
-                        b.put(candlestick.key(), candlestick.to_hbase())
-            except IOError as e:
-                print(f"{e}")
-                pass
+            with table.batch(**options) as b:
+                for candlestick in candlesticks:
+                    b.put(candlestick.key(), candlestick.to_hbase())
 
     def write(self, candlestick: Candlestick, **options) -> None:
         with self.pool.connection() as con:

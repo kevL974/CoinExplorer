@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable
 from opa.harvest.ochlv_constant import *
 from opa.core.candlestick import Candlestick
 from zipfile import ZipFile
@@ -42,7 +42,7 @@ def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
                        close_time=klines[KEY_CLOSE_TIME])
 
 
-def csv_to_candlesticks(symbol: str,  interval: str, csv_filepath: str) -> List[Candlestick]:
+def csv_to_candlesticks(symbol: str, interval: str, csv_filepath: str) -> List[Candlestick]:
     """
     Read csv file that contents candlesticks and  transforms them to list Candlestick object.
     :param symbol: symbol of candlestick in csv file
@@ -71,7 +71,6 @@ def dict_to_candlesticks(msg: Dict) -> Candlestick:
     :param msg: a dictionnary with Candlestick attibuts as keys.
     :return: a Candlestick object.
     """
-    a=msg
     return Candlestick(symbol=msg["symbol"],
                        interval=msg["interval"],
                        open_price=float(msg["open"]),
@@ -81,7 +80,8 @@ def dict_to_candlesticks(msg: Dict) -> Candlestick:
                        volume=float(msg["volume"]),
                        close_time=int(msg["close_time"]))
 
-def list_file(directory_path: str,extension: str) -> List[str]:
+
+def list_file(directory_path: str, extension: str) -> List[str]:
     """
     Returns the list of files to unzip present in the directory indicated in the variable directory_path.
     :param directory_path: Targerted directory
@@ -100,7 +100,7 @@ def list_file(directory_path: str,extension: str) -> List[str]:
     return files
 
 
-def dezip(directory_path:  str) -> List[str]:
+def dezip(directory_path: str) -> List[str]:
     """
     Uncompresses zip files in directory given in parameter
     :param directory_path: directory where zip files will be uncompressed.
@@ -147,3 +147,23 @@ def parse_connection_settings(connection_settings: str) -> Tuple[str, int]:
     host = settings[0]
     port = int(settings[1])
     return host, port
+
+
+def retry_connection_on_brokenpipe(max_retries: int = 5):
+    if max_retries <= 0:
+        raise ValueError(f"max_retries must be > 0 instead of {max_retries}")
+
+    def retry_connection(function: Callable):
+        def retry(*args, **kwargs):
+            retries = 0
+            while retries < max_retries:
+                try:
+                    return function(*args, **kwargs)
+                except BrokenPipeError:
+                    print(f"Try n°{retries+1} failed, retry...")
+                    retries += 1
+            raise Exception("Maximum retries exceeded")
+
+        return retry
+
+    return retry_connection
