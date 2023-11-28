@@ -75,7 +75,7 @@ services:
 
   collect:
     image: opa_collect:latest
-    command: -s ETHUSDT -i 1m 15m
+    command: -s BTCUSDT ETHUSDT -i 1m 15m
     networks:
       - opa_network
     depends_on:
@@ -83,6 +83,21 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+    restart: on-failure
+
+  streaming:
+    image: opa_streaming:latest
+    command: -t BTCUDST ETHUSDT
+    networks:
+      - opa_network
+    depends_on:
+      hbase:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      collect:
+        condition: service_started
+    restart: on-failure
 
 networks:
   opa_network:

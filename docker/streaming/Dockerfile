@@ -9,6 +9,6 @@ RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requireme
 
 ADD opa ./opa
 
-ENTRYPOINT ["python3", "-um", "opa.harvest.collect", "-d", "hbase:9090", "-k", "kafka:9092"]
+ENTRYPOINT ["python3", "-um", "opa.process.streaming", "-d", "hbase:9090", "-k", "kafka:9092"]
 
-CMD ["-s", "ETHUSDT","-i","1m","15m"]
+CMD ["-s", "BTCUSDT",  "ETHUSDT"]
