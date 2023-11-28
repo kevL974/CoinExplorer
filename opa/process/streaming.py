@@ -14,24 +14,27 @@ def message_consummable(consumer: KafkaConsumer):
         consumer.close()
 
 
-async def store_to_database(consumer: KafkaConsumer, output: InputOutputStream) -> None:
+async def store_to_database(consumer: KafkaConsumer, output: InputOutputStream, lock: asyncio.Lock) -> None:
     """
     Consumes data from Kafka topic and sends it to ouput.
     :param consumer: a Kafka consumer
     :param output: InputOutputStream object, can be HBaseTableConnector for exemple.
+    :param lock: a asyncio.Lock object
     :return:
     """
 
     for msg in message_consummable(consumer):
         print(msg.value)
         candlestick = dict_to_candlesticks(json.loads(msg.value))
-        output.write(candlestick)
+        async with lock:
+            output.write(candlestick)
 
 
 async def process_stream_data(consumers: Dict[str, KafkaConsumer], output: InputOutputStream) -> None:
     stream_processors = []
+    lock = asyncio.Lock()
     for topic_i, consumer_i in consumers.items():
-        stream_processors.append(asyncio.ensure_future(store_to_database(consumer_i,output)))
+        stream_processors.append(asyncio.ensure_future(store_to_database(consumer_i, output, lock)))
 
     finished, _ = await asyncio.wait(stream_processors)
 
