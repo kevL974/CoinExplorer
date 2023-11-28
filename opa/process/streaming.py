@@ -23,7 +23,7 @@ async def store_to_database(consumer: KafkaConsumer, output: InputOutputStream, 
     :return:
     """
 
-    for msg in message_consummable(consumer):
+    for msg in consumer:
         print(msg.value)
         candlestick = dict_to_candlesticks(json.loads(msg.value))
         async with lock:

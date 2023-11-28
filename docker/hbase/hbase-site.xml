@@ -18,6 +18,10 @@
     <value>false</value>
   </property>
   <property>
+  <name>hbase.thrift.server.socket.read.timeout</name>
+  <value>600000</value> <!-- 600,000 milliseconds = 10 minutes -->
+  </property>
+  <property>
     <name>hbase.cluster.distributed</name>
     <value>false</value>
   </property>
