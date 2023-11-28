@@ -12,9 +12,11 @@ API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
 API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
 
 
-async def get_missing_data(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
+async def get_missing_data(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream,
+                           lock: asyncio.Lock) -> None:
     """
     Get earliest data from websocket stream.
+    :param lock: a asyncio.Lock object
     :param client: Binance AsyncClient from Binance API
     :param symbol: Targeted symbol.
     :param interval: Targeted interval.
@@ -26,16 +28,19 @@ async def get_missing_data(client: AsyncClient, symbol: str, interval: str, outp
     for kline in klines:
         candlesticks.append(hist_klines_websocket_to_candlestick(symbol, interval, kline))
 
-    output.write_lines(candlesticks,topic=candlesticks[0].symbol)
+    async with lock:
+        output.write_lines(candlesticks, topic=candlesticks[0].symbol)
 
 
-async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
+async def start_collecting(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream,
+                           lock: asyncio.Lock) -> None:
     """
     Get latest data from websocket stream.
-    :param client:
-    :param symbol:
-    :param interval:
-    :param output:
+    :param lock: a asyncio.Lock object
+    :param client: Binance AsyncClient from Binance API
+    :param symbol: Targeted symbol.
+    :param interval: Targeted interval.
+    :param output: Place where data will be saved.
     :return:
     """
 
@@ -47,21 +52,23 @@ async def start_collecting(client: AsyncClient, symbol: str, interval: str, outp
             kline = kline_socket_msg[KEY_KLINE_CONTENT]
             if kline[KEY_FINAL_BAR]:
                 candlestick = stream_klines_to_candlestick(interval, kline)
-                output.write(candlestick, topic=candlestick.symbol)
+                async with lock:
+                    output.write(candlestick, topic=candlestick.symbol)
 
 
-async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream) -> None:
+async def start_stream_data_collector(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream, lock: asyncio.Lock) -> None:
     """
     Updates missing data from historical data and collect data from Binance web socket for symbol and interval given
     in parameter and saves them in output.
+    :param lock: a asyncio.Lock object
     :param client: Binance AsyncClient from Binance API
     :param symbol: Targeted symbol.
     :param interval: Targeted interval.
     :param output: Place where data will be saved.
     :return:
     """
-    await get_missing_data(client, symbol, interval, output)
-    await start_collecting(client, symbol, interval, output)
+    await get_missing_data(client, symbol, interval, output, lock)
+    await start_collecting(client, symbol, interval, output, lock)
 
 
 def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
@@ -89,9 +96,15 @@ async def collect_stream_data(symbols: List[str], intervals: List[str], output: 
     """
     client = await AsyncClient.create(api_key=API_KEY, api_secret=API_SECRET, testnet=True)
     collectors = []
+
+    lock = asyncio.Lock()
     for symbol_i in symbols:
         for interval_j in intervals:
-            collectors.append(asyncio.ensure_future(start_stream_data_collector(client, symbol_i, interval_j, output)))
+            collectors.append(asyncio.ensure_future(start_stream_data_collector(client,
+                                                                                symbol_i,
+                                                                                interval_j,
+                                                                                output,
+                                                                                lock)))
 
     finished, _ = await asyncio.wait(collectors)
     client.close_connection()
