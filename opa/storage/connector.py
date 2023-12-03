@@ -3,6 +3,7 @@ from typing import List, Dict
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
 from opa.utils import retry_connection_on_brokenpipe
+from datetime import datetime
 import pandas as pd
 import happybase as hb
 
@@ -92,7 +93,7 @@ class HbaseTableConnector(InputOutputStream):
                 print(f"{e}")
                 pass
 
-    def read(self,symbols:str,interval:str,date_start:int, date_stop:int,data_type:List) -> List:
+    def read(self,symbols:str,interval:str,date_start:int, date_stop:int) -> List:
         year_start = str(date_start)[0:4]
         month_start = str(date_start)[-2:]
         year_stop = str(date_stop)[0:4]
@@ -104,7 +105,11 @@ class HbaseTableConnector(InputOutputStream):
         keys = []
         symbols = []
         col_title = []
-        for key, data in table.scan(row_start=row_start, row_stop=row_stop):
+        with self.pool.connection() as con:
+            table = con.table(self.table_name)
+            scan_data = table.scan(row_start=row_start, row_stop=row_stop)
+
+        for key, data in scan_data:
             keys.append(key)
             datas.append(data)
         df_hbase = pd.DataFrame(datas, index=keys)
@@ -117,8 +122,6 @@ class HbaseTableConnector(InputOutputStream):
 
         print("Fichier csv créé")
         return df_hbase
-
-
 
     def __create_if_not_exist_table(self) -> None:
         """

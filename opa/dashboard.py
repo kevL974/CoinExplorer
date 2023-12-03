@@ -1,12 +1,12 @@
 import dash
-from dash import Dash, dcc, html, Input, Output, ctx, callback,State
+from dash import dcc, html, Input, Output, State
 import plotly.graph_objects as go
-from datetime import  date
+from datetime import date
 import dash_bootstrap_components as dbc
-from opa.storage.connector import  HbaseTableConnector
+from opa.storage.connector import HbaseTableConnector
 
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
-
+connector = HbaseTableConnector(host='127.0.0.1', port=9090)
 app.layout = dbc.Container(
     [
         dcc.Markdown('## **CryptoBot avec Binance** ',style={'textAlign': 'center','justification' : 'center', 'color': 'mediumturquoise','height':60,'background':' #4B5F63'}),
@@ -50,7 +50,7 @@ app.layout = dbc.Container(
                     ],className="d-flex justify-content-center align-items-stretch"),
                 dbc.Col(
                     [
-                        dcc.RadioItems(['BTCUSDT', 'ETHBTC'], 'BTCUSDT',id='symbol_radio', inline=False),
+                        dcc.RadioItems(['BTCUSDT', 'ETHUSDT'], 'BTCUSDT',id='symbol_radio', inline=False),
                     ],className="d-flex justify-content-center align-items-stretch"
                 ),
                 dbc.Col(
@@ -77,6 +77,7 @@ app.layout = dbc.Container(
 
 ])
 
+
 @app.callback(
     Output("graph", "figure"),
     Input('button', 'n_clicks'),
@@ -86,15 +87,9 @@ app.layout = dbc.Container(
     State('interval_radio', 'value')
 )
 def display_candlestick(value,start_date,end_date, symbol,interval):
-    print("grap update")
-    print('Bouton cliqué')
-    print("Symbol", symbol)
-    print("Interval", interval)
     start_date = str(start_date[0:4]) + str(start_date[5:7])
     end_date = str(end_date[0:4]) + str(end_date[5:7])
-    print("Start date", start_date)
-    print("Stop date", end_date)
-    df = HbaseTableConnector.read(symbol, interval, start_date, end_date)
+    df = connector.read(symbols=symbol, interval=interval, date_start=start_date, date_stop=end_date)
     df = df.sort_index()
     validate = False
     col_title = []
@@ -117,6 +112,7 @@ def display_candlestick(value,start_date,end_date, symbol,interval):
 
     fig.update_traces(visible=True,)
     return fig
+
 
 @app.callback(
     Output('output-container-date-picker-range', 'children'),
