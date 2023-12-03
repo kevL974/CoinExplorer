@@ -7,6 +7,7 @@ import pandas as pd
 import happybase as hb
 
 
+
 class InputOutputStream(ABC):
 
     @abstractmethod
@@ -91,8 +92,33 @@ class HbaseTableConnector(InputOutputStream):
                 print(f"{e}")
                 pass
 
-    def read(self, **options) -> List:
-        pass
+    def read(self,symbols:str,interval:str,date_start:int, date_stop:int,data_type:List) -> List:
+        year_start = str(date_start)[0:4]
+        month_start = str(date_start)[-2:]
+        year_stop = str(date_stop)[0:4]
+        month_stop = str(date_stop)[-2:]
+
+        row_start = f'''{symbols}-{interval}#{year_start}{month_start}01'''
+        row_stop = f'''{symbols}-{interval}#{year_stop}{month_stop}31'''
+        datas = []
+        keys = []
+        symbols = []
+        col_title = []
+        for key, data in table.scan(row_start=row_start, row_stop=row_stop):
+            keys.append(key)
+            datas.append(data)
+        df_hbase = pd.DataFrame(datas, index=keys)
+        df_hbase = df_hbase.apply(lambda x: x.apply(lambda y: float(y.decode("utf-8").replace('\'', ''))))
+        for x in df_hbase:
+            col_title.append(x)
+
+        df_hbase['date'] = df_hbase[col_title[1]].apply(lambda x: datetime.fromtimestamp(x / 1000))
+        returnValue = df_hbase.to_csv(f'{symbols}_{interval}_{date_start}_{date_stop}.csv')
+
+        print("Fichier csv créé")
+        return df_hbase
+
+
 
     def __create_if_not_exist_table(self) -> None:
         """
