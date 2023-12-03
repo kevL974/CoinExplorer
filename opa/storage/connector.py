@@ -118,9 +118,6 @@ class HbaseTableConnector(InputOutputStream):
             col_title.append(x)
 
         df_hbase['date'] = df_hbase[col_title[1]].apply(lambda x: datetime.fromtimestamp(x / 1000))
-        returnValue = df_hbase.to_csv(f'{symbols}_{interval}_{date_start}_{date_stop}.csv')
-
-        print("Fichier csv créé")
         return df_hbase
 
     def __create_if_not_exist_table(self) -> None:
