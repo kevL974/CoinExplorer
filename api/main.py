@@ -10,7 +10,7 @@ app = FastAPI(title="OPA the cryptocurrency genius",
               description="I'm OPA the cryptocurrency genius, make a request and i will grant it...")
 
 hbase_host = os.getenv("DATABASE_HOST")
-hbase_port = os.getenv("DATABASE_PORT")
+hbase_port = int(os.getenv("DATABASE_PORT"))
 
 pool = hb.ConnectionPool(size=3, host=hbase_host, port=hbase_port)
 TABLE_BINANCE = 'BINANCE'

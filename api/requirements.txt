@@ -2,3 +2,5 @@ fastapi
 httptools==0.1.*
 uvloop
 uvicorn
+pandas
+happybase
