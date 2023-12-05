@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
 from opa.utils import retry_connection_on_brokenpipe
@@ -93,32 +93,21 @@ class HbaseTableConnector(InputOutputStream):
                 print(f"{e}")
                 pass
 
-    def read(self,symbols:str,interval:str,date_start:int, date_stop:int) -> List:
-        year_start = str(date_start)[0:4]
-        month_start = str(date_start)[-2:]
-        year_stop = str(date_stop)[0:4]
-        month_stop = str(date_stop)[-2:]
+    def read(self, **options) -> List:
+        end = options.get('end', None)
+        if end:
+            row_start, row_stop = self.__build_query_row_start_stop(**options)
+            with self.pool.connection() as con:
+                table = con.table(self.table_name)
+                candlesticks = [data for key, data in table.scan(row_start=row_start, row_stop=row_stop)]
 
-        row_start = f'''{symbols}-{interval}#{year_start}{month_start}01'''
-        row_stop = f'''{symbols}-{interval}#{year_stop}{month_stop}31'''
-        datas = []
-        keys = []
-        symbols = []
-        col_title = []
-        with self.pool.connection() as con:
-            table = con.table(self.table_name)
-            scan_data = table.scan(row_start=row_start, row_stop=row_stop)
+        else:
+            row_prefix = self.build_query_row_prefix(**options)
+            with self.pool.connection() as con:
+                table = con.table(self.table_name)
+                candlesticks = [data for key, data in table.scan(row_prefix=row_prefix)]
 
-        for key, data in scan_data:
-            keys.append(key)
-            datas.append(data)
-        df_hbase = pd.DataFrame(datas, index=keys)
-        df_hbase = df_hbase.apply(lambda x: x.apply(lambda y: float(y.decode("utf-8").replace('\'', ''))))
-        for x in df_hbase:
-            col_title.append(x)
-
-        df_hbase['date'] = df_hbase[col_title[1]].apply(lambda x: datetime.fromtimestamp(x / 1000))
-        return df_hbase
+        return candlesticks
 
     def __create_if_not_exist_table(self) -> None:
         """
@@ -130,6 +119,30 @@ class HbaseTableConnector(InputOutputStream):
             if self.table_name.encode("utf-8") not in list_tables:
                 con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
 
+    @staticmethod
+    def build_query_row_prefix(symbol: str, interval: str, start: int) -> str:
+        """
+        Generates 'row_prefix' parameter for table scan operation.
+        :param symbol: name of crypto assets.
+        :param interval: interval time.
+        :param start: date in string format YYYYMMDD.
+        :return: a row_prefix value in string format.
+        """
+        return f"{symbol}-{interval}#{start}"
+
+    @staticmethod
+    def build_query_row_start_stop(symbol: str, interval: str, start: int, end: int) -> Tuple[str,str]:
+        """
+        Generates 'row_prefix' parameter for table scan operation.
+        :param symbol: name of crypto assets.
+        :param interval: interval time.
+        :param start: date in string format YYYYMMDD.
+        :param end: date in string format YYYYMMDD
+        :return: a tuple that contains row_start parameter in index 0 and row_stop parameter in index 1.
+        """
+        row_start = f"{symbol}-{interval}#{start}"
+        row_stop = f"{symbol}-{interval}#{end}"
+        return row_start, row_stop
 
 class KafkaConnector(InputOutputStream):
 
