@@ -1,12 +1,11 @@
-import dash
-from dash import dcc, html, Input, Output, State
-import plotly.graph_objects as go
+from dash import Dash, dcc, html, Input, Output, State
 from datetime import date
+import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
-from opa.storage.connector import HbaseTableConnector
+import requests
+import pandas as pd
 
-app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
-connector = HbaseTableConnector(host='127.0.0.1', port=9090)
+app = Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
     [
         dcc.Markdown('## **CryptoBot avec Binance** ',style={'textAlign': 'center','justification' : 'center', 'color': 'mediumturquoise','height':60,'background':' #4B5F63'}),
@@ -87,30 +86,39 @@ app.layout = dbc.Container(
     State('interval_radio', 'value')
 )
 def display_candlestick(value,start_date,end_date, symbol,interval):
-    start_date = str(start_date[0:4]) + str(start_date[5:7])
-    end_date = str(end_date[0:4]) + str(end_date[5:7])
-    df = connector.read(symbols=symbol, interval=interval, date_start=start_date, date_stop=end_date)
-    df = df.sort_index()
-    validate = False
-    col_title = []
-    for x in df:
-        col_title.append(x)
-    fig = go.Figure(
-        go.Candlestick(
-            x=df[col_title[6]],
-            open=df[col_title[4]],
-            high=df[col_title[2]],
-            low=df[col_title[3]],
-            close=df[col_title[0]],
-            increasing_line_color='#6DE47A', decreasing_line_color='#FF4D4D',
+    start_date = start_date.replace('-','')
+    end_date = end_date.replace('-', '')
+    response = requests.get(f'http://127.0.0.1:8000/candlesticks?symbol={symbol}&interval={interval}&start={start_date}&end={end_date}')
+    fig = go.Figure()
+    if response.status_code == requests.codes.ok:
+        df = pd.read_json(response.json(), orient='index')
+        df = df.sort_index()
+        fig = go.Figure(
+            go.Candlestick(
+                x=df['CANDLESTICKES:close_time'],
+                open=df['CANDLESTICKES:open'],
+                high=df['CANDLESTICKES:high'],
+                low=df['CANDLESTICKES:low'],
+                close=df['CANDLESTICKES:close'],
+                increasing_line_color='#6DE47A', decreasing_line_color='#FF4D4D',
 
-        ))
+            ))
+
+    elif response.status_code == requests.codes.bad_request:
+        print("Erreur 400")
+
+    elif response.status_code == requests.codes.unprocessable_entity:
+        print("Erreur 422")
+        print(response.text)
+    else:
+        print(f"erreur {response.status_code}")
+
     fig.update_layout(
         title='Evolution de la monnaie',
         yaxis_title='Value',
-        height = 800)
+        height=800)
 
-    fig.update_traces(visible=True,)
+    fig.update_traces(visible=True, )
     return fig
 
 
