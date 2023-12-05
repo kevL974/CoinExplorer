@@ -87,7 +87,7 @@ services:
 
   streaming:
     image: opa_streaming:latest
-    command: -t BTCUDST ETHUSDT
+    command: -t BTCUSDT ETHUSDT
     networks:
       - opa_network
     depends_on:
