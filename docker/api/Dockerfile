@@ -3,11 +3,10 @@ LABEL authors="OPA_Datascientest"
 
 WORKDIR /app
 
-COPY requirements.txt .
+ADD api .
 
 RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
 
-ADD opa ./opa
-WORKDIR /app/opa/api
+expose 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -14,4 +14,9 @@ docker image build \
 --tag opa_hbase:latest \
 --file docker/hbase/Dockerfile . && \
 
+docker image build \
+--tag opa_api:latest \
+--file docker/api/Dockerfile . && \
+
+
 docker volume prune -f && docker-compose -f docker/docker-compose.yml up --scale kafka=3 -d
