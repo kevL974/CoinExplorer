@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
-from opa.utils import retry_connection_on_brokenpipe
-from datetime import datetime
+from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import pandas as pd
 import happybase as hb
 
@@ -84,14 +83,11 @@ class HbaseTableConnector(InputOutputStream):
                 for candlestick in candlesticks:
                     b.put(candlestick.key(), candlestick.to_hbase())
 
+    @retry_connection_on_ttransportexception(5)
     def write(self, candlestick: Candlestick, **options) -> None:
         with self.pool.connection() as con:
             table = con.table(self.table_name)
-            try:
-                table.put(candlestick.key(), candlestick.to_hbase())
-            except IOError as e:
-                print(f"{e}")
-                pass
+            table.put(candlestick.key(), candlestick.to_hbase())
 
     def read(self, **options) -> List:
         end = options.get('end', None)
@@ -114,10 +110,13 @@ class HbaseTableConnector(InputOutputStream):
         Create table with Hbase client  if not exist.
         :return:
         """
-        with self.pool.connection() as con:
-            list_tables = con.tables()
-            if self.table_name.encode("utf-8") not in list_tables:
-                con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
+        try:
+            with self.pool.connection() as con:
+                list_tables = con.tables()
+                if self.table_name.encode("utf-8") not in list_tables:
+                    con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
+        except IOError:
+            print("WARN tried to create table BINANCE whereas already created...")
 
     @staticmethod
     def build_query_row_prefix(symbol: str, interval: str, start: int) -> str:

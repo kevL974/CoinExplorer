@@ -4,6 +4,7 @@ from opa.core.candlestick import Candlestick
 from zipfile import ZipFile
 from os import listdir
 from os.path import join
+from thriftpy2.transport.base import TTransportException
 import os
 import csv
 
@@ -160,6 +161,26 @@ def retry_connection_on_brokenpipe(max_retries: int = 5):
                 try:
                     return function(*args, **kwargs)
                 except BrokenPipeError:
+                    print(f"Try n°{retries+1} failed, retry...")
+                    retries += 1
+            raise Exception("Maximum retries exceeded")
+
+        return retry
+
+    return retry_connection
+
+
+def retry_connection_on_ttransportexception(max_retries: int = 5):
+    if max_retries <= 0:
+        raise ValueError(f"max_retries must be > 0 instead of {max_retries}")
+
+    def retry_connection(function: Callable):
+        def retry(*args, **kwargs):
+            retries = 0
+            while retries < max_retries:
+                try:
+                    return function(*args, **kwargs)
+                except TTransportException:
                     print(f"Try n°{retries+1} failed, retry...")
                     retries += 1
             raise Exception("Maximum retries exceeded")
