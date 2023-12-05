@@ -4,6 +4,9 @@ import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
 import pandas as pd
+import os
+
+OPA_API_URL: str = os.getenv("OPA_API_URL")
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
@@ -119,7 +122,7 @@ def display_candlestick(value, symbol: str, interval: str, start_date: str, end_
     start_date = start_date.replace('-', '')
     end_date = end_date.replace('-', '')
     response = requests.get(
-        f'http://127.0.0.1:8000/candlesticks?symbol={symbol}&interval={interval}&start={start_date}&end={end_date}')
+        f'http://{OPA_API_URL}/candlesticks?symbol={symbol}&interval={interval}&start={start_date}&end={end_date}')
     fig = go.Figure()
     if response.status_code == requests.codes.ok:
         df = pd.read_json(response.json(), orient='index')
