@@ -3,10 +3,4 @@ happybase
 kafka-python
 pytest
 tqdm
-pyspark
 pandas
-dash
-fastapi
-httptools==0.1.*
-uvloop
-uvicorn
