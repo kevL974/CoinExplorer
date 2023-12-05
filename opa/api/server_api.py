@@ -4,14 +4,14 @@ from datetime import datetime
 import pandas as pd
 import happybase as hb
 import uvicorn
+import os
 
 app = FastAPI(title="OPA the cryptocurrency genius",
-              description="I'm OPA the cryptocurrency ls -algenius, make a request and i will grant it...")
+              description="I'm OPA the cryptocurrency genius, make a request and i will grant it...")
 
-#hbase_host = os.getenv("DATABASE_HOST")
-#hbase_port = os.getenv("DATABASE_PORT")
-hbase_host = '127.0.0.1'
-hbase_port = 9090
+hbase_host = os.getenv("DATABASE_HOST")
+hbase_port = os.getenv("DATABASE_PORT")
+
 pool = hb.ConnectionPool(size=3, host=hbase_host, port=hbase_port)
 TABLE_BINANCE = 'BINANCE'
 
@@ -29,22 +29,19 @@ def health_check():
     return {"status": 1}
 
 
-@app.get("/candlesticks", name="Get candlesticks data of symbols")
-def get_candelsticks(symbol: str, interval: str, start: str, end: Optional[str]):
+@app.get("/candlesticks", name="Get candlesticks")
+def get_candelsticks(symbol: str, interval: str, start: str, end: str):
     """
     Returns candlesticks data according to this request parameters.
     :param symbol: the name of crypto asset (choices : ['BTCUSDT, ETHUSDT']).
     :param interval: candlesticks interval.
-    :param start: starting date of candlesticks. Example : start=202201 or start=20230217.
-    :param end: endind date of candlesticks. Example : end=None or end=20230822.
+    :param start: starting date of candlesticks. Example : start=20220101 or start=20230217.
+    :param end: endind date of candlesticks. Example : end=20211105 or end=20230822.
     :return: List of candlesticks in json format
     """
     valid_start, valid_end = is_valid_date_params(start, end)
 
-    if valid_end:
-        candlesticks = get_candlesticks_over_a_period(symbol, interval, valid_start, valid_end)
-    else:
-        candlesticks = get_candlesticks_from_a_date(symbol, interval, valid_start)
+    candlesticks = get_candlesticks_over_a_period(symbol, interval, valid_start, valid_end)
 
     return to_json_format(candlesticks)
 
@@ -55,16 +52,8 @@ def get_candlesticks_over_a_period(symbol: str, interval: str, start: str, end: 
 
     with pool.connection() as con:
         table = con.table(TABLE_BINANCE)
-        candlesticks = [data for key, data in table.scan(row_start=row_start, row_stop=row_stop)]
-
-    return candlesticks
-
-
-def get_candlesticks_from_a_date(symbol: str, interval: str, start: str) -> List:
-    row_prefix = f"{symbol}-{interval}#{start}"
-    with pool.connection() as con:
-        table = con.table(TABLE_BINANCE)
-        candlesticks = [data for key, data in table.scan(row_prefix=row_prefix)]
+        candlesticks = [data for key, data in table.scan(row_start=row_start.encode("utf-8"),
+                                                         row_stop=row_stop.encode("utf-8"))]
 
     return candlesticks
 
@@ -107,7 +96,7 @@ def str_to_datetime(date: str) -> datetime:
         raise HTTPException(status_code=401, detail="Bad date format" )
 
 
-def is_valid_date_params(start: str, end: str = None) -> Tuple[str, Optional[str]]:
+def is_valid_date_params(start: str, end: str) -> Tuple[str, str]:
     """
     Checks if date params are in good format, then if start date and end date are before today's date.
     :param start: start date.
@@ -120,20 +109,19 @@ def is_valid_date_params(start: str, end: str = None) -> Tuple[str, Optional[str
                             detail=f"Invalid date value, it should be before today but "
                                    f"start({start}) > today({datetime.now().strftime('%Y%m%d')})")
 
-    if end:
-        date_end = str_to_datetime(end)
-        if not is_date_before_today(date_end):
-            raise HTTPException(status_code=402,
-                                detail=f"Invalid date value, it should be before today but "
-                                       f"end({end}) > today({datetime.now().strftime('%Y%m%d')})")
+    date_end = str_to_datetime(end)
+    if not is_date_before_today(date_end):
+        raise HTTPException(status_code=402,
+                            detail=f"Invalid date value, it should be before today but "
+                                   f"end({end}) > today({datetime.now().strftime('%Y%m%d')})")
 
-        if date_start > date_end:
-            tmp = start
-            start = end
-            end = tmp
+    if date_start > date_end:
+        tmp = start
+        start = end
+        end = tmp
         return start, end
 
-    return start, None
+    return start, end
 
 
 if __name__ == "__main__":
