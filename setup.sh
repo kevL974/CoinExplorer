@@ -18,5 +18,8 @@ docker image build \
 --tag opa_api:latest \
 --file docker/api/Dockerfile . && \
 
+docker image build \
+--tag opa_dashboard:latest \
+--file docker/dashboard/Dockerfile . && \
 
 docker volume prune -f && docker-compose -f docker/docker-compose.yml up --scale kafka=3 -d

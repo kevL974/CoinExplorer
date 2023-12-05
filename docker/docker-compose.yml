@@ -113,6 +113,19 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  dashboard:
+    image: opa_dashboard:latest
+    environment:
+      OPA_API_URL: 'api:8000'
+    ports:
+      - "5000:5000"
+    networks:
+      - opa_network
+    depends_on:
+      api:
+        condition: service_started
+    restart: on-failure
+
 networks:
   opa_network:
     driver: bridge

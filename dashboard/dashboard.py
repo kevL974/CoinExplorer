@@ -113,10 +113,10 @@ app.layout = dbc.Container(
 @app.callback(
     Output("graph", "figure"),
     Input('button', 'n_clicks'),
-    State('interval_date', 'start_date'),
-    State('interval_date', 'end_date'),
     State('symbol_radio', 'value'),
-    State('interval_radio', 'value')
+    State('interval_radio', 'value'),
+    State('interval_date', 'start_date'),
+    State('interval_date', 'end_date')
 )
 def display_candlestick(value, symbol: str, interval: str, start_date: str, end_date: str):
     start_date = start_date.replace('-', '')
