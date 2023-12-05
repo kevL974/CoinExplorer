@@ -14,6 +14,8 @@ hbase_port = os.getenv("DATABASE_PORT")
 
 pool = hb.ConnectionPool(size=3, host=hbase_host, port=hbase_port)
 TABLE_BINANCE = 'BINANCE'
+COLUMNS = ['CANDLESTICKES:close', 'CANDLESTICKES:close_time', 'CANDLESTICKES:high',
+       'CANDLESTICKES:low', 'CANDLESTICKES:open', 'CANDLESTICKES:volume']
 
 
 @app.get('/')
@@ -64,12 +66,15 @@ def to_json_format(candlesticks: List) -> str:
     :param candlesticks: list of candlesticks data
     :return: a json document.
     """
-    df = pd.DataFrame(candlesticks).apply(lambda x: x.apply(lambda y: float(y.decode("utf-8").replace('\'', ''))))
-    columns = [c.decode("utf-8") for c in df.columns]
-    df.columns = columns
-    df['CANDLESTICKES:close_time'] = df['CANDLESTICKES:close_time'].apply(lambda x: int(x))
-    df['date'] = df['CANDLESTICKES:close_time'].apply(lambda x: datetime.fromtimestamp(x / 1000))
-    df.set_index('date', inplace=True)
+    if not candlesticks:
+        df = pd.DataFrame(data=[], columns=COLUMNS)
+    else:
+        df = pd.DataFrame(candlesticks).apply(lambda x: x.apply(lambda y: float(y.decode("utf-8").replace('\'', ''))))
+        columns = [c.decode("utf-8") for c in df.columns]
+        df.columns = columns
+        df['CANDLESTICKES:close_time'] = df['CANDLESTICKES:close_time'].apply(lambda x: int(x))
+        df['date'] = df['CANDLESTICKES:close_time'].apply(lambda x: datetime.fromtimestamp(x / 1000))
+        df.set_index('date', inplace=True)
 
     return df.to_json(orient='index')
 
@@ -93,7 +98,7 @@ def str_to_datetime(date: str) -> datetime:
     try:
         return datetime.strptime(date, "%Y%m%d")
     except ValueError:
-        raise HTTPException(status_code=401, detail="Bad date format" )
+        raise HTTPException(status_code=400, detail="Bad date format")
 
 
 def is_valid_date_params(start: str, end: str) -> Tuple[str, str]:
@@ -105,13 +110,13 @@ def is_valid_date_params(start: str, end: str) -> Tuple[str, str]:
     """
     date_start = str_to_datetime(start)
     if not is_date_before_today(date_start):
-        raise HTTPException(status_code=402,
+        raise HTTPException(status_code=422,
                             detail=f"Invalid date value, it should be before today but "
                                    f"start({start}) > today({datetime.now().strftime('%Y%m%d')})")
 
     date_end = str_to_datetime(end)
     if not is_date_before_today(date_end):
-        raise HTTPException(status_code=402,
+        raise HTTPException(status_code=422,
                             detail=f"Invalid date value, it should be before today but "
                                    f"end({end}) > today({datetime.now().strftime('%Y%m%d')})")
 
