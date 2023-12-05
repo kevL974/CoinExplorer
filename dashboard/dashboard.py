@@ -1,5 +1,5 @@
 from dash import Dash, dcc, html, Input, Output, State
-from datetime import date
+from datetime import date, datetime
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
@@ -60,7 +60,7 @@ app.layout = dbc.Container(
                                     min_date_allowed=date(2017, 8, 1),
                                     initial_visible_month=date(2023, 12, 1),
                                     start_date=date(2023, 9, 1),
-                                    end_date=date(2023, 12, 1),
+                                    end_date=datetime.now().date(),
                                     display_format='DD MMM YY',
                                 ),
                                 html.Div(id='output-container-date-picker-range'),
