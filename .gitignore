@@ -1,0 +1,9 @@
+venv
+data
+.pytest_cache
+.idea
+.ipynb_checkpoints
+*.json
+*.ini
+.~*.ipynb
+.ipynb
