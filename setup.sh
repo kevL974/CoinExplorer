@@ -1,10 +1,10 @@
 #!/bin/bash
 
 docker image build \
---tag opa_collect:latest \
+--tag opa_collect_historic_data:latest \
 --build-arg api_key=${API_KEY_BINANCE_TESTNET} \
 --build-arg api_secret=${API_KEY_SECRET_BINANCE_TESTNET} \
---file docker/collect/Dockerfile . && \
+--file docker/collect_historic_data/Dockerfile . && \
 
 docker image build \
 --tag opa_streaming:latest \

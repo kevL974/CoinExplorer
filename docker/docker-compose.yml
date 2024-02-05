@@ -73,9 +73,9 @@ services:
     ports:
       - "8888:8888"
 
-  collect:
-    image: opa_collect:latest
-    command: -s BTCUSDT ETHUSDT -i 15m --skip_stream_data
+  collect_hd:
+    image: opa_collect_historic_data:latest
+    command: -s ETHUSDT -i 1h
     networks:
       - opa_network
     depends_on:
@@ -95,7 +95,7 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      collect:
+      collect_hd:
         condition: service_started
     restart: on-failure
 
