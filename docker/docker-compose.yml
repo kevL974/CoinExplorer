@@ -20,9 +20,9 @@ services:
       test: ["CMD", "./opt/kafka/bin/kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 40
     environment:
-      DOCKER_API_VERSION: 1.22
+      DOCKER_API_VERSION: 1.24
       KAFKA_ADVERTISED_HOST_NAME: 192.168.85.129
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "BTCUSDT:2:3,ETHUSDT:2:3"
@@ -59,7 +59,7 @@ services:
       test: ["CMD", "nc", "-zv", "localhost", "9090"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 40
 
   jupyter:
     image: jupyter/datascience-notebook:latest
@@ -75,7 +75,7 @@ services:
 
   collect:
     image: opa_collect:latest
-    command: -s BTCUSDT ETHUSDT -i 1m 15m
+    command: -s BTCUSDT ETHUSDT -i 15m --skip_stream_data
     networks:
       - opa_network
     depends_on:
