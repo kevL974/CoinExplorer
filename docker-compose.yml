@@ -1,4 +1,5 @@
 version: '3.9'
+name: opa
 services:
   zookeeper:
     image: wurstmeister/zookeeper
@@ -45,6 +46,9 @@ services:
 
   hbase:
     image: opa_hbase:latest
+    build:
+      context: .
+      dockerfile: docker/hbase/Dockerfile
     networks:
       - opa_network
     volumes:
@@ -75,18 +79,24 @@ services:
 
   collect_hd:
     image: opa_collect_historic_data:latest
-    command: -s ETHUSDT -i 1h
+    build:
+      context: .
+      dockerfile: docker/collect_historic_data/Dockerfile
+    command: -s BTCUSDT ETHUSDT -i 1h 30m
     networks:
       - opa_network
     depends_on:
       hbase:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+      #kafka:
+      #  condition: service_healthy
     restart: on-failure
 
   streaming:
     image: opa_streaming:latest
+    build:
+      context: .
+      dockerfile: docker/streaming/Dockerfile
     command: -t BTCUSDT ETHUSDT
     networks:
       - opa_network
@@ -101,6 +111,9 @@ services:
 
   api:
     image: opa_api:latest
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
     environment:
       DATABASE_HOST: 'hbase'
       DATABASE_PORT: 9090
@@ -115,6 +128,9 @@ services:
 
   dashboard:
     image: opa_dashboard:latest
+    build:
+      context: .
+      dockerfile: docker/dashboard/Dockerfile
     environment:
       OPA_API_URL: 'api:8000'
     ports:
