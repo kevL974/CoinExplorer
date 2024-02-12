@@ -22,7 +22,7 @@ services:
       timeout: 5s
       retries: 20
     environment:
-      DOCKER_API_VERSION: 1.22
+      DOCKER_API_VERSION: 1.24
       KAFKA_ADVERTISED_HOST_NAME: 192.168.85.129
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "BTCUSDT:2:3,ETHUSDT:2:3"
