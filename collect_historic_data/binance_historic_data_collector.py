@@ -1,5 +1,5 @@
 import argparse
-from opa.storage.connector import InputOutputStream, HbaseTableConnector, KafkaConnector
+from opa.storage.connector import InputOutputStream, HbaseTableConnector,
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
