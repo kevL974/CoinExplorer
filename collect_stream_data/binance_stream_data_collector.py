@@ -118,7 +118,6 @@ if __name__ == "__main__":
     intervals = args.interval
     kafka_host, kafka_port = parse_connection_settings(args.kafka)
     output_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_producer")
-    print(API_KEY)
 
     if not args.skip_stream_data:
         loop = asyncio.get_event_loop()
