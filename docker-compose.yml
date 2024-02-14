@@ -7,6 +7,8 @@ services:
       - opa_network
     ports:
       - "2181:2181"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
     restart: unless-stopped
 
   kafka:
@@ -23,8 +25,8 @@ services:
       timeout: 5s
       retries: 40
     environment:
-      DOCKER_API_VERSION: 1.24
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.85.129
+      DOCKER_API_VERSION: 1.44
+      HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "BTCUSDT:2:3,ETHUSDT:2:3"
     volumes:
@@ -36,8 +38,10 @@ services:
     networks:
       - opa_network
     depends_on:
-      - kafka
-      - zookeeper
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_started
     ports:
       - "1234:8080"
     environment:
@@ -88,8 +92,22 @@ services:
     depends_on:
       hbase:
         condition: service_healthy
-      #kafka:
-      #  condition: service_healthy
+    restart: on-failure
+
+  collect_sd:
+    image: opa_collect_stream_data:latest
+    build:
+      context: .
+      dockerfile: docker/collect_stream_data/Dockerfile
+      args:
+        - API_KEY
+        - API_SECRET
+    command: -s BTCUSDT ETHUSDT -i 15m
+    networks:
+      - opa_network
+    depends_on:
+      kafka:
+        condition: service_healthy
     restart: on-failure
 
   streaming:
