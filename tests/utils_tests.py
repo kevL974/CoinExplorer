@@ -4,7 +4,8 @@ import pytest
 import os
 
 
-def test_csv_to_candlesticks():
+@pytest.mark.asyncio
+async def test_csv_to_candlesticks():
     symbol = "ETHBTC"
     interval = "1m"
     file_path = "test_candlesticks.csv"
@@ -19,7 +20,7 @@ def test_csv_to_candlesticks():
     with open(file_path, "w") as file:
         file.writelines(data)
 
-    candlesticks = csv_to_candlesticks(symbol, interval, file_path)
+    candlesticks = await csv_to_candlesticks(symbol, interval, file_path)
 
     """ the number of candle sticks must be equal to the number of elements in the data list """
     assert len(data) == len(candlesticks)
