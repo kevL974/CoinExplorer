@@ -4,3 +4,7 @@ kafka-python
 pytest
 tqdm
 pandas
+aiohttp
+aiofiles
+aiocsv
+async_unzip

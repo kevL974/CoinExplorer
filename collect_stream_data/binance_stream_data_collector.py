@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import os
 from binance import AsyncClient, BinanceSocketManager
 from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
@@ -118,9 +119,7 @@ if __name__ == "__main__":
     intervals = args.interval
     kafka_host, kafka_port = parse_connection_settings(args.kafka)
     output_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_producer")
-    print(API_KEY)
 
-    if not args.skip_stream_data:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
 
