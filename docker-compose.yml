@@ -77,7 +77,7 @@ services:
       - hbase
       - kafka
     volumes:
-      - ../notebook:/home/jovyan/work
+      - ./notebook:/home/jovyan/work
     ports:
       - "8888:8888"
 
@@ -86,7 +86,7 @@ services:
     build:
       context: .
       dockerfile: docker/collect_historic_data/Dockerfile
-    command: -s BTCUSDT ETHUSDT -i 1h 30m
+    command: -s BTCUSDT ETHUSDT -i 1m 15m 30m
     networks:
       - opa_network
     depends_on:
@@ -102,7 +102,7 @@ services:
       args:
         - API_KEY
         - API_SECRET
-    command: -s BTCUSDT ETHUSDT -i 15m
+    command: -s BTCUSDT ETHUSDT -i 1m 15m 30m
     networks:
       - opa_network
     depends_on:
