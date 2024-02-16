@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-
 from opa.harvest.utility import convert_to_date_object
 from opa.storage.connector import InputOutputStream, HbaseTableConnector
 from opa.utils import *
@@ -17,12 +16,13 @@ async def start_historic_data_collector(symbol: str, interval: str, year: str, m
         path = get_path(symbol, interval)
         file_name = "{}-{}-{}-{}.zip".format(symbol.upper(), interval, year, '{:02d}'.format(month))
 
-        await download_file(path, file_name, folder="")
+        dl_path = await download_file(path, file_name, folder="")
 
-        list_files_csv = dezip(path)
-        for csv_files in tqdm(list_files_csv):
-            list_hbase = csv_to_candlesticks(symbol, interval, csv_files)
-            output.write_lines(list_hbase, batch_size=500)
+        if dl_path:
+            csv_file = await dezip(dl_path)
+            list_hbase = await csv_to_candlesticks(symbol, interval, csv_file)
+            async with lock:
+                output.write_lines(list_hbase, batch_size=10000)
 
 
 async def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
