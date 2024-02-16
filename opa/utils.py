@@ -92,14 +92,11 @@ async def list_file(directory_path: str, extension: str) -> List[str]:
     """
     files = []
     all_files_in_directory = await listdir(directory_path)
-    print(all_files_in_directory)
     for file in all_files_in_directory:
         if (file.find(extension) >= 0) & (await isdir(file) == False):
             files.append(file)
         else:
             print("file à ne pas dezipper:", file)
-
-    print(files)
     return files
 
 
@@ -112,12 +109,8 @@ async def dezip(zip_path: str) -> str:
     """
     pwd = dirname(realpath(__file__))
     zip_absolut_path = join(pwd, zip_path)
-
-    print(zip_absolut_path)
     try:
-        print('extraction...')
         await unzip(zip_absolut_path,  join(dirname(zip_absolut_path), "extract"))
-        print('Terminé!')
     except BadZipfile as e:
         print(f"{e} : {zip_absolut_path}")
 

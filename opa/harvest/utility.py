@@ -61,9 +61,9 @@ async def download_file(base_path, file_name, date_range=None, folder=None):
         async with aiohttp.ClientSession() as session:
             async with session.get(download_url) as dl_file:
 
-                length = dl_file.headers.get('content-length')
+                if dl_file.status == 200:
+                    length = dl_file.headers.get('content-length')
 
-                if length:
                     length = int(length)
                     blocksize = max(4096, length // 100)
 
@@ -80,8 +80,10 @@ async def download_file(base_path, file_name, date_range=None, folder=None):
                             done = int(50 * dl_progress / length)
                             sys.stdout.write("\r[%s%s]" % ('#' * done, '.' * (50 - done)))
                             sys.stdout.flush()
+                    return save_path
 
-        return save_path
+                else:
+                    return None
 
     except aiohttp.http_exceptions.HttpProcessingError:
         print("\nFile not found: {}".format(download_url))

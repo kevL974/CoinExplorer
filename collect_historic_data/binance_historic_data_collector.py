@@ -1,16 +1,27 @@
 import argparse
 import asyncio
-from opa.harvest.utility import convert_to_date_object
 from opa.storage.connector import InputOutputStream, HbaseTableConnector
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
 from opa.harvest.utility import download_file, convert_to_date_object, get_path
-from tqdm import tqdm
+from tqdm.asyncio import tqdm
+
+BATCH_SIZE = 10000
 
 
 async def start_historic_data_collector(symbol: str, interval: str, year: str, month: int, output: InputOutputStream,
                                         lock: asyncio.Lock) -> None:
+    """
+    Collects historical data for one given parameters and save them to database.
+    :param symbol: Targeted symbol.
+    :param interval: Targeted  interval.
+    :param year: year in string format.
+    :param month: integer between 1-12.
+    :param output: Place where data will be saved.
+    :param lock: a asyncio.Lock object.
+    :return:
+    """
     current_date = convert_to_date_object('{}-{}-01'.format(year, month))
     if START_DATE <= current_date <= END_DATE:
         path = get_path(symbol, interval)
@@ -18,11 +29,11 @@ async def start_historic_data_collector(symbol: str, interval: str, year: str, m
 
         dl_path = await download_file(path, file_name, folder="")
 
-        if dl_path:
+        if dl_path is not None:
             csv_file = await dezip(dl_path)
             list_hbase = await csv_to_candlesticks(symbol, interval, csv_file)
             async with lock:
-                output.write_lines(list_hbase, batch_size=10000)
+                output.write_lines(list_hbase, batch_size=BATCH_SIZE)
 
 
 async def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
@@ -49,7 +60,10 @@ async def collect_hist_data(symbols: List[str], intervals: List[str], output: In
                                                                                           output,
                                                                                           lock)))
         current += 1
-    finished, _ = await asyncio.wait(collectors)
+
+    for f in tqdm(asyncio.as_completed(collectors), total=len(collectors)):
+        await f
+    #finished, _ = await tqdm(collectors)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Collect historic candlesticks data from Binance.')
