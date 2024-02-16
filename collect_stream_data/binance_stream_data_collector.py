@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import os
 from binance import AsyncClient, BinanceSocketManager
 from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
