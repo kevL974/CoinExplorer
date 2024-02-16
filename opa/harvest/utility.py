@@ -1,8 +1,17 @@
-import os, sys, re, shutil
 import json
-from pathlib import Path
+import os
+import re
+import shutil
+import sys
+import aiohttp
+import aiofiles
+from aiofiles.ospath import exists as aio_exists
+from aiofiles.os import makedirs as aio_makedirs
+from aiofiles.os import remove as aio_remove
 import urllib.request
 from argparse import ArgumentTypeError
+from pathlib import Path
+
 from opa.harvest.enums import *
 
 
@@ -29,7 +38,7 @@ def get_all_symbols(type):
     return list(map(lambda symbol: symbol['symbol'], json.loads(response)['symbols']))
 
 
-def download_file(base_path, file_name, date_range=None, folder=None):
+async def download_file(base_path, file_name, date_range=None, folder=None):
     download_path = "{}{}".format(base_path, file_name)
     if folder:
         base_path = os.path.join(folder, base_path)
@@ -40,35 +49,44 @@ def download_file(base_path, file_name, date_range=None, folder=None):
 
     if os.path.exists(save_path):
         print("\nfile already exists! {}".format(save_path))
-        return
+        return save_path
 
     # make the directory
-    if not os.path.exists(base_path):
-        Path(get_destination_dir(base_path)).mkdir(parents=True, exist_ok=True)
+    if not await aio_exists(base_path):
+        await aio_makedirs(Path(get_destination_dir(base_path)), exist_ok=True)
 
     try:
         download_url = get_download_url(download_path)
-        dl_file = urllib.request.urlopen(download_url)
-        length = dl_file.getheader('content-length')
-        if length:
-            length = int(length)
-            blocksize = max(4096, length // 100)
-        with open(save_path, 'wb') as out_file:
-            dl_progress = 0
-            print("\nFile Download: {}".format(save_path))
-            while True:
-                buf = dl_file.read(blocksize)
-                if not buf:
-                    break
-                dl_progress += len(buf)
-                out_file.write(buf)
-                done = int(50 * dl_progress / length)
-                sys.stdout.write("\r[%s%s]" % ('#' * done, '.' * (50 - done)))
-                sys.stdout.flush()
 
-    except urllib.error.HTTPError:
-        print("\nFile not found: {}".format(download_url))
+        async with aiohttp.ClientSession() as session:
+            async with session.get(download_url) as dl_file:
+
+                length = dl_file.headers.get('content-length')
+
+                if length:
+                    length = int(length)
+                    blocksize = max(4096, length // 100)
+
+                    async with aiofiles.open(save_path, mode='wb') as out_file:
+                        dl_progress = 0
+                        print("\nFile Download: {}".format(save_path))
+
+                        while True:
+                            buf = await dl_file.content.read(blocksize)
+                            if not buf:
+                                break
+                            dl_progress += len(buf)
+                            await out_file.write(buf)
+                            done = int(50 * dl_progress / length)
+                            sys.stdout.write("\r[%s%s]" % ('#' * done, '.' * (50 - done)))
+                            sys.stdout.flush()
+
         return save_path
+
+    except aiohttp.http_exceptions.HttpProcessingError:
+        print("\nFile not found: {}".format(download_url))
+        aio_remove(save_path)
+        return None
 
 
 def convert_to_date_object(d):
