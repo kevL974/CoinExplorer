@@ -63,7 +63,6 @@ async def collect_hist_data(symbols: List[str], intervals: List[str], output: In
 
     for f in tqdm(asyncio.as_completed(collectors), total=len(collectors)):
         await f
-    #finished, _ = await tqdm(collectors)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Collect historic candlesticks data from Binance.')
