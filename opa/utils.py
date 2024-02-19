@@ -1,11 +1,14 @@
 from typing import List, Dict, Tuple, Callable
 from opa.harvest.ochlv_constant import *
 from opa.core.candlestick import Candlestick
-from zipfile import ZipFile
-from os import listdir
-from os.path import join
+from zipfile import BadZipfile
+from async_unzip.unzipper import unzip
+from os.path import join, realpath, dirname, basename
 from thriftpy2.transport.base import TTransportException
-import os
+from aiofiles.os import listdir
+from aiofiles.ospath import isdir
+from aiofiles import open as aio_open
+import aiocsv
 import csv
 
 
@@ -43,7 +46,7 @@ def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
                        close_time=klines[KEY_CLOSE_TIME])
 
 
-def csv_to_candlesticks(symbol: str, interval: str, csv_filepath: str) -> List[Candlestick]:
+async def csv_to_candlesticks(symbol: str, interval: str, csv_filepath: str) -> List[Candlestick]:
     """
     Read csv file that contents candlesticks and  transforms them to list Candlestick object.
     :param symbol: symbol of candlestick in csv file
@@ -52,9 +55,8 @@ def csv_to_candlesticks(symbol: str, interval: str, csv_filepath: str) -> List[C
     :return: a list of Candlestick object
     """
     candlesticks = []
-    with open(csv_filepath, newline='\n') as csvfile:
-        csvreader = csv.reader(csvfile, delimiter=',')
-        for row in csvreader:
+    async with aio_open(csv_filepath, mode='r', newline='\n') as csvfile:
+        async for row in aiocsv.AsyncReader(csvfile, delimiter=','):
             candlesticks.append(Candlestick(symbol=symbol,
                                             interval=interval,
                                             open_price=float(row[1]),
@@ -82,51 +84,37 @@ def dict_to_candlesticks(msg: Dict) -> Candlestick:
                        close_time=int(msg["close_time"]))
 
 
-def list_file(directory_path: str, extension: str) -> List[str]:
+async def list_file(directory_path: str, extension: str) -> List[str]:
     """
     Returns the list of files to unzip present in the directory indicated in the variable directory_path.
     :param directory_path: Targerted directory
     :return: list of path.
     """
     files = []
-    all_files_in_directory = listdir(directory_path)
-    print(all_files_in_directory)
+    all_files_in_directory = await listdir(directory_path)
     for file in all_files_in_directory:
-        if (file.find(extension) >= 0) & (os.path.isdir(file) == False):
+        if (file.find(extension) >= 0) & (await isdir(file) == False):
             files.append(file)
         else:
             print("file à ne pas dezipper:", file)
-
-    print(files)
     return files
 
 
-def dezip(directory_path: str) -> List[str]:
+async def dezip(zip_path: str) -> str:
     """
-    Uncompresses zip files in directory given in parameter
-    :param directory_path: directory where zip files will be uncompressed.
-    :param files: paths of zip files
+    Uncompresses zip file given in parameter
+    :param zip_path: zip file to be uncompressed.
+    :param file: path of uncompressed file.
     :return:
     """
-    list_files_csv = []
-    list_files = list_file(directory_path, ".zip")
-    print(list_files)
-    pwd = os.path.dirname(os.path.realpath(__file__))
-    directory_absolut_path = os.path.join(pwd, directory_path)
-    i = 0
+    pwd = dirname(realpath(__file__))
+    zip_absolut_path = join(pwd, zip_path)
+    try:
+        await unzip(zip_absolut_path,  join(dirname(zip_absolut_path), "extract"))
+    except BadZipfile as e:
+        print(f"{e} : {zip_absolut_path}")
 
-    for i in range(len(list_files)):
-        file_path = join(directory_absolut_path, list_files[i])
-        print(file_path)
-        # ouvrir le fichier zip en mode lecture
-        with ZipFile(file_path, 'r') as zip:
-            # extraire tous les fichiers
-            print('extraction...')
-            zip.extractall(path=join(directory_absolut_path, "extract"))
-            print('Terminé!')
-        list_files_csv.append(os.path.join(directory_absolut_path, "extract", list_files[i].replace('zip', 'csv')))
-
-    return list_files_csv
+    return join(dirname(zip_absolut_path), "extract", basename(zip_path).replace('zip', 'csv'))
 
 
 def is_valid_connection_setting_format(connection_settings: str) -> bool:

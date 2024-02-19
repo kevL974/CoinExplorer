@@ -1,4 +1,5 @@
 version: '3.9'
+name: opa
 services:
   zookeeper:
     image: wurstmeister/zookeeper
@@ -6,6 +7,8 @@ services:
       - opa_network
     ports:
       - "2181:2181"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
     restart: unless-stopped
 
   kafka:
@@ -20,10 +23,10 @@ services:
       test: ["CMD", "./opt/kafka/bin/kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 40
     environment:
-      DOCKER_API_VERSION: 1.22
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.85.129
+      DOCKER_API_VERSION: 1.44
+      HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "BTCUSDT:2:3,ETHUSDT:2:3"
     volumes:
@@ -35,8 +38,10 @@ services:
     networks:
       - opa_network
     depends_on:
-      - kafka
-      - zookeeper
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_started
     ports:
       - "1234:8080"
     environment:
@@ -45,6 +50,9 @@ services:
 
   hbase:
     image: opa_hbase:latest
+    build:
+      context: .
+      dockerfile: docker/hbase/Dockerfile
     networks:
       - opa_network
     volumes:
@@ -59,7 +67,7 @@ services:
       test: ["CMD", "nc", "-zv", "localhost", "9090"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 40
 
   jupyter:
     image: jupyter/datascience-notebook:latest
@@ -69,24 +77,44 @@ services:
       - hbase
       - kafka
     volumes:
-      - ../notebook:/home/jovyan/work
+      - ./notebook:/home/jovyan/work
     ports:
       - "8888:8888"
 
-  collect:
-    image: opa_collect:latest
-    command: -s BTCUSDT ETHUSDT -i 1m 15m
+  collect_hd:
+    image: opa_collect_historic_data:latest
+    build:
+      context: .
+      dockerfile: docker/collect_historic_data/Dockerfile
+    command: -s BTCUSDT ETHUSDT -i 1m 15m 30m
     networks:
       - opa_network
     depends_on:
       hbase:
         condition: service_healthy
+    restart: on-failure
+
+  collect_sd:
+    image: opa_collect_stream_data:latest
+    build:
+      context: .
+      dockerfile: docker/collect_stream_data/Dockerfile
+      args:
+        - API_KEY
+        - API_SECRET
+    command: -s BTCUSDT ETHUSDT -i 1m 15m 30m
+    networks:
+      - opa_network
+    depends_on:
       kafka:
         condition: service_healthy
     restart: on-failure
 
-  streaming:
+  stream2hbase:
     image: opa_streaming:latest
+    build:
+      context: .
+      dockerfile: docker/stream_to_hbase/Dockerfile
     command: -t BTCUSDT ETHUSDT
     networks:
       - opa_network
@@ -95,12 +123,13 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      collect:
-        condition: service_started
     restart: on-failure
 
   api:
     image: opa_api:latest
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
     environment:
       DATABASE_HOST: 'hbase'
       DATABASE_PORT: 9090
@@ -115,6 +144,9 @@ services:
 
   dashboard:
     image: opa_dashboard:latest
+    build:
+      context: .
+      dockerfile: docker/dashboard/Dockerfile
     environment:
       OPA_API_URL: 'api:8000'
     ports:

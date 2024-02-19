@@ -1,12 +1,11 @@
 import argparse
 import asyncio
+import os
 from binance import AsyncClient, BinanceSocketManager
-from opa.storage.connector import InputOutputStream, HbaseTableConnector, KafkaConnector
+from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
 from opa.harvest.enums import *
 from typing import List
-from opa.harvest.download_kline import download_monthly_klines
-from tqdm import tqdm
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
 API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
@@ -71,22 +70,6 @@ async def start_stream_data_collector(client: AsyncClient, symbol: str, interval
     await start_collecting(client, symbol, interval, output, lock)
 
 
-def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
-    """
-    Collect all historical data for each symbols and intervals and save them in output given in parameter.
-    :param symbols: List of targeted symbols e.g ["BTCUSDT", "ETHBTC"]
-    :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
-    :return:
-    """
-    paths = download_monthly_klines(symbols, intervals)
-
-    for symbol, interval, path in paths:
-        list_files_csv = dezip(path)
-        for csv_files in tqdm(list_files_csv):
-            list_hbase = csv_to_candlesticks(symbol, interval, csv_files)
-            output.write_lines(list_hbase, batch_size=500)
-
-
 async def collect_stream_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
     """
     Collects data in real time foreach symbols and intervals and save them in output given in parameter.
@@ -128,28 +111,15 @@ if __name__ == "__main__":
                         help='kafka connection setting : -k <ip_boostrapserver>:<port_bootstrapserver>',
                         type=str,
                         required=True)
-    parser.add_argument('-d', '--database',
-                        help='database connection setting : -d <ip_database>:<port_database>',
-                        type=str,
-                        required=True)
-    parser.add_argument('--skip_hist_data', help='Skip historic data downloading', action='store_true')
     parser.add_argument('--skip_stream_data', help='Skip streaming data gathering', action='store_true')
-    parser.add_argument('--testnet', help='use binance testnet platform', action='store_true')
     parser.add_argument('--debug', help='activate debug mode', action='store_true')
     args = parser.parse_args()
 
     symbols = args.symbol
     intervals = args.interval
     kafka_host, kafka_port = parse_connection_settings(args.kafka)
-    db_host, db_port = parse_connection_settings(args.database)
-
-    output_hbase = HbaseTableConnector(host=db_host, port=db_port, table_name='BINANCE')
     output_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_producer")
 
-    if not args.skip_hist_data:
-        collect_hist_data(symbols, intervals, output_hbase)
-
-    if not args.skip_stream_data:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(collect_stream_data(symbols, intervals, output_kafka))
 

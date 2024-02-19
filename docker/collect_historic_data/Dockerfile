@@ -9,6 +9,8 @@ RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requireme
 
 ADD opa ./opa
 
-ENTRYPOINT ["python3", "-um", "opa.process.streaming", "-d", "hbase:9090", "-k", "kafka:9092"]
+ADD collect_historic_data .
 
-CMD ["-s", "BTCUSDT",  "ETHUSDT"]
+ENTRYPOINT ["python3", "binance_historic_data_collector.py", "-d", "hbase:9090"]
+
+CMD ["-s", "ETHUSDT","-i", "1m", "15m"]
