@@ -48,6 +48,18 @@ def get_candelsticks(symbol: str, interval: str, start: str, end: str):
     return to_json_format(candlesticks)
 
 
+@app.get("/assets", name="Get available digital assets")
+def get_digital_assets():
+    """
+    Returns digital assets available on server.
+    :return: List of digital assets in json format
+    """
+    with pool.connection() as con:
+        table = con.table(TABLE_BINANCE)
+        keys = [key for key, data in table.scan()]
+    return keys
+
+
 def get_candlesticks_over_a_period(symbol: str, interval: str, start: str, end: str) -> List:
     row_start = f"{symbol}-{interval}#{start}"
     row_stop = f"{symbol}-{interval}#{end}"
@@ -130,4 +142,4 @@ def is_valid_date_params(start: str, end: str) -> Tuple[str, str]:
 
 
 if __name__ == "__main__":
-    uvicorn.run("server_api:app", port=80, reload=True)
+    uvicorn.run("main:app", port=5051, reload=True)
