@@ -61,7 +61,7 @@ if __name__ == "__main__":
     db_host, db_port = parse_connection_settings(args.database)
 
     input_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_consumor")
-    output_hbase = HbaseTableConnector(host=db_host, port=db_port)
+    output_hbase = HbaseTableConnector("BINANCE", {}, host=db_host, port=db_port)
 
     kafka_consumers = input_kafka.read(topics=topics, mode=KafkaConnector.ONE_CONS_TO_ALL_TOPICS)
 

@@ -65,15 +65,16 @@ class CsvConnector(InputOutputStream):
 
 class HbaseTableConnector(InputOutputStream):
 
-    def __init__(self, host="localhost", port=9090, table_name="BINANCE"):
+    def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090):
         """
         Initialize Hbase client  and create table if not already exist
+        :param schema:
         """
         self.host = host
         self.port = port
         self.table_name = table_name
         self.pool = hb.ConnectionPool(size=3, host=self.host, port=self.port)
-        self.__create_if_not_exist_table()
+        self.__create_if_not_exist_table(schema)
 
     @retry_connection_on_brokenpipe(5)
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
@@ -105,16 +106,17 @@ class HbaseTableConnector(InputOutputStream):
 
         return candlesticks
 
-    def __create_if_not_exist_table(self) -> None:
+    def __create_if_not_exist_table(self, schema: Dict[str,Dict]) -> None:
         """
         Create table with Hbase client  if not exist.
+        :param schema: table  schema.
         :return:
         """
         try:
             with self.pool.connection() as con:
                 list_tables = con.tables()
                 if self.table_name.encode("utf-8") not in list_tables:
-                    con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
+                    con.create_table(self.table_name, schema)
         except IOError:
             print("WARN tried to create table BINANCE whereas already created...")
 

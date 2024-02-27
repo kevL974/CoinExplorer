@@ -8,17 +8,30 @@ from opa.harvest.utility import download_file, convert_to_date_object, get_path
 from tqdm.asyncio import tqdm
 
 BATCH_SIZE = 10000
+SCHEMA_BINANCE_TABLE= {"CANDLESTICKS":dict(), "TECHNICAL_INDICATORS":dict()}
+SCHEMA_INFO_TABLE= {"MARKET_DATA":dict(), "TECHNICAL_INDICATORS":dict()}
 
 
-async def start_historic_data_collector(symbol: str, interval: str, year: str, month: int, output: InputOutputStream,
-                                        lock: asyncio.Lock) -> None:
+async def update_available_assets(symbol: str, interval: str, tb_info: InputOutputStream, lock: asyncio.Lock) -> None:
+    """
+    Sets available assets data into tb_indo table.
+    :param symbol: Targeted symbol.
+    :param interval: Targeted  interval.
+    :param tb_info: table 'INFO'
+    :param lock: asyncio.Lock
+    :return:
+    """
+
+
+async def start_historic_data_collector(symbol: str, interval: str, year: str, month: int,
+                                        tb_binance: InputOutputStream, lock: asyncio.Lock) -> None:
     """
     Collects historical data for one given parameters and save them to database.
     :param symbol: Targeted symbol.
     :param interval: Targeted  interval.
     :param year: year in string format.
     :param month: integer between 1-12.
-    :param output: Place where data will be saved.
+    :param tb_binance: table where candlesticks data will be saved.
     :param lock: a asyncio.Lock object.
     :return:
     """
@@ -33,14 +46,17 @@ async def start_historic_data_collector(symbol: str, interval: str, year: str, m
             csv_file = await dezip(dl_path)
             list_hbase = await csv_to_candlesticks(symbol, interval, csv_file)
             async with lock:
-                output.write_lines(list_hbase, batch_size=BATCH_SIZE)
+                tb_binance.write_lines(list_hbase, batch_size=BATCH_SIZE)
 
 
-async def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
+async def collect_hist_data(symbols: List[str], intervals: List[str], tb_binance: InputOutputStream,
+                            tb_info: InputOutputStream) -> None:
     """
     Collect all historical data for each symbols and intervals and save them in output given in parameter.
     :param symbols: List of targeted symbols e.g ["BTCUSDT", "ETHBTC"]
     :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
+    :param tb_info: table 'INFO'  where meta data will be saved.
+    :param tb_binance: table 'BINANCE' where candlesticks will be saved.
     :return:
     """
     collectors = []
@@ -53,12 +69,14 @@ async def collect_hist_data(symbols: List[str], intervals: List[str], output: In
         for interval in intervals:
             for year in YEARS:
                 for month in MONTHS:
-                    collectors.append(asyncio.ensure_future(start_historic_data_collector(symbol,
-                                                                                          interval,
-                                                                                          year,
-                                                                                          month,
-                                                                                          output,
-                                                                                          lock)))
+                    collectors.append(asyncio.ensure_future(
+                        start_historic_data_collector(symbol,
+                                                      interval,
+                                                      year,
+                                                      month,
+                                                      tb_binance,
+                                                      tb_info,
+                                                      lock)))
         current += 1
 
     for f in tqdm(asyncio.as_completed(collectors), total=len(collectors)):
@@ -90,7 +108,15 @@ if __name__ == "__main__":
     intervals = args.interval
     db_host, db_port = parse_connection_settings(args.database)
 
-    output_hbase = HbaseTableConnector(host=db_host, port=db_port, table_name='BINANCE')
+    tb_binance_hbase = HbaseTableConnector(table_name='BINANCE',
+                                           schema=SCHEMA_BINANCE_TABLE,
+                                           host=db_host,
+                                           port=db_port)
+
+    tb_info_hbase = HbaseTableConnector(table_name='INFO',
+                                        schema=SCHEMA_INFO_TABLE,
+                                        host=db_host,
+                                        port=db_port)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(collect_hist_data(symbols, intervals, output_hbase))
+    loop.run_until_complete(collect_hist_data(symbols, intervals, tb_binance_hbase))
