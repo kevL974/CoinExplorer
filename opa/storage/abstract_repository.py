@@ -1,11 +1,25 @@
-from typing import TypeVar, List, Optional
+from typing import TypeVar, List, Optional, Generic, AnyStr, Dict, Type
 from abc import ABC, abstractmethod
 
-T = TypeVar('T')
-ID = TypeVar('ID')
+
+class Entity(ABC):
+    pass
+class HbaseEntity(ABC,Entity):
+
+    @abstractmethod
+    def value(self) -> Dict:
+        pass
+
+    @abstractmethod
+    def id(self) -> str:
+        pass
 
 
-class CrudRepository(ABC[T, ID]):
+T = TypeVar('T', covariant=True,bound='Entity')
+ID = TypeVar('ID', covariant=True, bound=AnyStr)
+
+
+class CrudRepository(ABC, Generic[T, ID]):
     """
     Interface for generic CRUD operations on a repository for a specific type.
     """
@@ -103,13 +117,13 @@ class CrudRepository(ABC[T, ID]):
         """
         pass
 
-
     def delete_all_by_entities(self, entities: List[T]) -> None:
         """
         Deletes the given entities.
         :param entities: must not be null. Must not contain null elements.
         :return:
         """
+        pass
 
     @abstractmethod
     def delete_all_by_id(self, ids: List[ID]) -> None:
@@ -120,3 +134,7 @@ class CrudRepository(ABC[T, ID]):
         :return:
         """
         pass
+
+
+class HbaseRepository(ABC, CrudRepository[HbaseEntity, str]):
+    pass
