@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, TypeVar, Optional
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
+from opa.storage.abstract_repository import HbaseRepository, HbaseEntity, ID, T
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import pandas as pd
 import happybase as hb
+
 
 
 
@@ -63,7 +65,57 @@ class CsvConnector(InputOutputStream):
         return list_hbase_full
 
 
-class HbaseTableConnector(InputOutputStream):
+class HbaseTableConnector(HbaseRepository):
+
+    def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090, pool_size=3):
+        """
+        Initialize Hbase client  and create table if not already exist
+        :param schema:
+        """
+        self.host = host
+        self.port = port
+        self.table_name = table_name
+        self.pool = hb.ConnectionPool(size=pool_size, host=self.host, port=self.port)
+        self.__create_if_not_exist_table(schema)
+
+    @retry_connection_on_ttransportexception
+    def save(self, entity: T) -> T:
+        with self.pool.connection() as con:
+            table = con.table(self.table_name)
+            table.put(entity.id(), entity.value())
+
+    def save_all(self, entities: List[T]):
+        pass
+
+    def find_by_id(self, id: ID) -> Optional[T]:
+        pass
+
+    def find_all(self) -> List[T]:
+        pass
+
+    def find_all_by_id(self, ids: List[ID]) -> List[T]:
+        pass
+
+    def exists_by_id(self, id: ID) -> bool:
+        pass
+
+    def count(self) -> int:
+        pass
+
+    def delete(self, data: T) -> None:
+        pass
+
+    def delete_by_id(self, id: ID) -> None:
+        pass
+
+    def delete_all(self) -> None:
+        pass
+
+    def delete_all_by_entities(self, entities: List[T]) -> None:
+        pass
+
+    def delete_all_by_id(self, ids: List[ID]) -> None:
+        pass
 
     def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090):
         """

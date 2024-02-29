@@ -1,21 +1,8 @@
-from typing import TypeVar, List, Optional, Generic, AnyStr, Dict, Type
+from typing import TypeVar, List, Optional, Generic, AnyStr
+from opa.storage.abstract_model import HbaseEntity
 from abc import ABC, abstractmethod
 
-
-class Entity(ABC):
-    pass
-class HbaseEntity(ABC,Entity):
-
-    @abstractmethod
-    def value(self) -> Dict:
-        pass
-
-    @abstractmethod
-    def id(self) -> str:
-        pass
-
-
-T = TypeVar('T', covariant=True,bound='Entity')
+T = TypeVar('T', covariant=True, bound='Entity')
 ID = TypeVar('ID', covariant=True, bound=AnyStr)
 
 
@@ -117,6 +104,7 @@ class CrudRepository(ABC, Generic[T, ID]):
         """
         pass
 
+    @abstractmethod
     def delete_all_by_entities(self, entities: List[T]) -> None:
         """
         Deletes the given entities.
@@ -136,5 +124,5 @@ class CrudRepository(ABC, Generic[T, ID]):
         pass
 
 
-class HbaseRepository(ABC, CrudRepository[HbaseEntity, str]):
+class HbaseRepository(CrudRepository[HbaseEntity, str], ABC):
     pass
