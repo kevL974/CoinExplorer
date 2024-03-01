@@ -9,7 +9,11 @@ class Entity(ABC):
     pass
 
 
-class HbaseEntity(ABC,Entity):
+class HbaseEntity(Entity):
+
+    @abstractmethod
+    def load(self, data: Dict) -> None:
+        pass
 
     @abstractmethod
     def value(self) -> Dict:
