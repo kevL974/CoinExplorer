@@ -51,45 +51,35 @@ class HbaseCrudRepository:
         return entities
 
     @retry_connection_on_ttransportexception(5)
-    def find_by_id(self, id: str) -> Optional[HbaseEntity]:
+    def find_by_id(self, id: str) -> Optional[Dict]:
         """
         Retrieves an entity by its id.
         :param id: must not be null.
         :return: the entity with the given id or Optional#empty() if none found.
         """
-        entity = None
-
+        result = None
         with self.pool.connection() as con:
             table = con.table(self.table_name)
             result = table.row(row=id)
 
-        if result:
-            entity = HbaseEntity()
-            entity.load()
-
-        return entity
+        return result
 
     @retry_connection_on_brokenpipe(5)
-    def find_all_prefix_id(self, prefix_id: str) -> List[HbaseEntity]:
+    def find_all_prefix_id(self, prefix_id: str) -> List[Dict]:
         """
         Returns all instances of the type HbaseEntity
         with the ids that match with given prefix ID.
         :return: all entities
         """
-        entities = []
+        results = []
         with self.pool.connection() as con:
             table = con.table(self.table_name)
-            results = table.scan(row_prefix=prefix_id)
+            results.extend(table.scan(row_prefix=prefix_id))
 
-            for data in results:
-                entity = HbaseEntity()
-                entity.load()
-                entities.append(entity)
-
-        return entities
+        return results
 
     @retry_connection_on_brokenpipe(5)
-    def find_all_by_id(self, ids: List[str]) -> List[HbaseEntity]:
+    def find_all_by_id(self, ids: List[str]) -> List[Dict]:
         """
         Returns all instances of the type HbaseEntity with the given IDs.
         If some or all ids are not found, no entities are returned for these IDs.
@@ -97,20 +87,15 @@ class HbaseCrudRepository:
         :param ids: must not be null nor contain any null values.
         :return: guaranteed to be not null. The size can be equal or less than the number of given ids.
         """
-        entities = []
+        results = []
         with self.pool.connection() as con:
             table = con.table(self.table_name)
-            results = table.rows(rows=ids)
+            results.extend(table.rows(rows=ids))
 
-            for data in results:
-                entity = HbaseEntity()
-                entity.load()
-                entities.append(entity)
-
-        return entities
+        return results
 
     @retry_connection_on_brokenpipe(5)
-    def find_all_between_ids(self, start_id: str, end_id: str) -> List[HbaseEntity]:
+    def find_all_between_ids(self, start_id: str, end_id: str) -> List[Dict]:
         """
         Returns all instances of the type HbaseEntity between two IDs.
         If some or all ids are not found, no entities are returned for these IDs.
@@ -119,17 +104,12 @@ class HbaseCrudRepository:
         :param end_id: ID where the scanner should stop.
         :return: guaranteed to be not null.
         """
-        entities = []
+        results = []
         with self.pool.connection() as con:
             table = con.table(self.table_name)
-            results = table.scan(row_start=start_id, row_stop=end_id)
+            results.extend(table.scan(row_start=start_id, row_stop=end_id))
 
-            for data in results:
-                entity = HbaseEntity()
-                entity.load()
-                entities.append(entity)
-
-        return entities
+        return results
 
     @retry_connection_on_ttransportexception(5)
     def exists_by_id(self, id: str) -> bool:
@@ -138,7 +118,7 @@ class HbaseCrudRepository:
         :param id: must not be null.
         :return: true if an entity with the given id exists, false otherwise.
         """
-        return self.find_all_by_id() is not None
+        return self.find_all_by_id(id) is not None
 
     @retry_connection_on_brokenpipe(5)
     def count(self, filter: str=None) -> int:
