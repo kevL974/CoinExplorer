@@ -12,10 +12,6 @@ class Entity(ABC):
 class HbaseEntity(Entity):
 
     @abstractmethod
-    def load(self, data: Dict) -> None:
-        pass
-
-    @abstractmethod
     def value(self) -> Dict:
         pass
 
