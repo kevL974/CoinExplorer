@@ -44,9 +44,9 @@ class Candlestick(HbaseEntity):
         database.
         :return: a Dict with values in string format
         """
-        return {'CANDLESTICKES:open': "'" + str(self.open) + "'",
-                'CANDLESTICKES:close': "'" + str(self.close) + "'",
-                'CANDLESTICKES:high': "'" + str(self.high) + "'",
-                'CANDLESTICKES:low': "'" + str(self.low) + "'",
-                'CANDLESTICKES:volume': "'" + str(self.volume) + "'",
-                'CANDLESTICKES:close_time': "'" + str(self.close_time) + "'"}
+        return {'CANDLESTICKS:open': "'" + str(self.open) + "'",
+                'CANDLESTICKS:close': "'" + str(self.close) + "'",
+                'CANDLESTICKS:high': "'" + str(self.high) + "'",
+                'CANDLESTICKS:low': "'" + str(self.low) + "'",
+                'CANDLESTICKS:volume': "'" + str(self.volume) + "'",
+                'CANDLESTICKS:close_time': "'" + str(self.close_time) + "'"}

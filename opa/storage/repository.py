@@ -20,7 +20,7 @@ class HbaseCrudRepository:
         self.pool = hb.ConnectionPool(size=pool_size, host=self.host, port=self.port)
         self.__create_if_not_exist_table(schema)
 
-    @retry_connection_on_ttransportexception
+    @retry_connection_on_ttransportexception(5)
     def save(self, entity: HbaseEntity) -> HbaseEntity:
         """
         Saves a given entity. Use the returned instance for further operations as the save operation might have changed
