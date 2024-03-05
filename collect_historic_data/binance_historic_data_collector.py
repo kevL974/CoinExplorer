@@ -1,24 +1,50 @@
 import argparse
 import asyncio
-from opa.storage.connector import InputOutputStream, HbaseTableConnector
+from opa.storage.repository import HbaseCrudRepository
 from opa.utils import *
 from opa.harvest.enums import *
+from opa.storage.model import Asset
 from typing import List
 from opa.harvest.utility import download_file, convert_to_date_object, get_path
 from tqdm.asyncio import tqdm
 
 BATCH_SIZE = 10000
+SCHEMA_BINANCE_TABLE = {"CANDLESTICKS": dict(), "TECHNICAL_INDICATORS":dict()}
+SCHEMA_INFO_TABLE = {"MARKET_DATA": dict()}
 
 
-async def start_historic_data_collector(symbol: str, interval: str, year: str, month: int, output: InputOutputStream,
-                                        lock: asyncio.Lock) -> None:
+async def update_available_assets(symbol: str, interval: str, tb_info: HbaseCrudRepository, lock: asyncio.Lock) -> None:
+    """
+    Sets available assets data into tb_indo table.
+    :param symbol: Targeted symbol.
+    :param interval: Targeted  interval.
+    :param tb_info: table 'INFO'
+    :param lock: asyncio.Lock
+    :return:
+    """
+    async with lock:
+        available_asset = tb_info.find_by_id(symbol)
+
+        intervals = []
+
+        if available_asset is not None:
+            intervals.extend(available_asset["MARKET_DATA:intervals"].split(" "))
+
+        intervals.append(interval)
+
+        updated_asset = Asset(symbol, intervals)
+        tb_info.save(updated_asset)
+
+
+async def start_historic_data_collector(symbol: str, interval: str, year: str, month: int,
+                                        tb_binance: HbaseCrudRepository, lock: asyncio.Lock) -> None:
     """
     Collects historical data for one given parameters and save them to database.
     :param symbol: Targeted symbol.
     :param interval: Targeted  interval.
     :param year: year in string format.
     :param month: integer between 1-12.
-    :param output: Place where data will be saved.
+    :param tb_binance: table where candlesticks data will be saved.
     :param lock: a asyncio.Lock object.
     :return:
     """
@@ -33,14 +59,15 @@ async def start_historic_data_collector(symbol: str, interval: str, year: str, m
             csv_file = await dezip(dl_path)
             list_hbase = await csv_to_candlesticks(symbol, interval, csv_file)
             async with lock:
-                output.write_lines(list_hbase, batch_size=BATCH_SIZE)
+                tb_binance.save_all(list_hbase, batch_size=BATCH_SIZE)
 
 
-async def collect_hist_data(symbols: List[str], intervals: List[str], output: InputOutputStream) -> None:
+async def collect_hist_data(symbols: List[str], intervals: List[str], tb_binance: HbaseCrudRepository, tb_info: HbaseCrudRepository) -> None:
     """
     Collect all historical data for each symbols and intervals and save them in output given in parameter.
     :param symbols: List of targeted symbols e.g ["BTCUSDT", "ETHBTC"]
     :param intervals: List of candleline intervals in string format e.g ["1m", "15m"]
+    :param tb_binance: table 'BINANCE' where candlesticks will be saved.
     :return:
     """
     collectors = []
@@ -51,14 +78,16 @@ async def collect_hist_data(symbols: List[str], intervals: List[str], output: In
     for symbol in symbols:
         print("[{}/{}] - start download monthly {} klines ".format(current, num_symbols, symbol))
         for interval in intervals:
+            update_available_assets(symbol, interval, tb_info, lock)
             for year in YEARS:
                 for month in MONTHS:
-                    collectors.append(asyncio.ensure_future(start_historic_data_collector(symbol,
-                                                                                          interval,
-                                                                                          year,
-                                                                                          month,
-                                                                                          output,
-                                                                                          lock)))
+                    collectors.append(asyncio.ensure_future(
+                        start_historic_data_collector(symbol,
+                                                      interval,
+                                                      year,
+                                                      month,
+                                                      tb_binance,
+                                                      lock)))
         current += 1
 
     for f in tqdm(asyncio.as_completed(collectors), total=len(collectors)):
@@ -90,7 +119,15 @@ if __name__ == "__main__":
     intervals = args.interval
     db_host, db_port = parse_connection_settings(args.database)
 
-    output_hbase = HbaseTableConnector(host=db_host, port=db_port, table_name='BINANCE')
+    tb_info_hbase = HbaseCrudRepository(table_name='INFO',
+                                        schema=SCHEMA_INFO_TABLE,
+                                        host=db_host,
+                                        port=db_port)
+
+    tb_binance_hbase = HbaseCrudRepository(table_name='BINANCE',
+                                           schema=SCHEMA_BINANCE_TABLE,
+                                           host=db_host,
+                                           port=db_port)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(collect_hist_data(symbols, intervals, output_hbase))
+    loop.run_until_complete(collect_hist_data(symbols, intervals, tb_binance_hbase, tb_info_hbase))
