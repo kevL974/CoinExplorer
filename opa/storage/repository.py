@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional
-from opa.storage.abstract_model import HbaseEntity
+from opa.storage.model import HbaseEntity
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import happybase as hb
 

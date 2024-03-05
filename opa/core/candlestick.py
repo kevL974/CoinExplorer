@@ -1,6 +1,6 @@
 import datetime
 import json
-from opa.storage.abstract_model import HbaseEntity
+from opa.storage.model import HbaseEntity
 from typing import Dict
 
 
@@ -39,11 +39,6 @@ class Candlestick(HbaseEntity):
         return json.dumps(dict_candlestick)
 
     def value(self) -> Dict:
-        """
-        Return a dictionnary that maps all object attributs with theirs values in order to be saved inside a Hbase
-        database.
-        :return: a Dict with values in string format
-        """
         return {'CANDLESTICKS:open': "'" + str(self.open) + "'",
                 'CANDLESTICKS:close': "'" + str(self.close) + "'",
                 'CANDLESTICKS:high': "'" + str(self.high) + "'",
