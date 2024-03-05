@@ -14,6 +14,7 @@ hbase_port = int(os.getenv("DATABASE_PORT"))
 
 pool = hb.ConnectionPool(size=3, host=hbase_host, port=hbase_port)
 TABLE_BINANCE = 'BINANCE'
+TABLE_INFO = 'INFO'
 COLUMNS = ['CANDLESTICKES:close', 'CANDLESTICKES:close_time', 'CANDLESTICKES:high',
        'CANDLESTICKES:low', 'CANDLESTICKES:open', 'CANDLESTICKES:volume']
 
@@ -55,7 +56,7 @@ def get_digital_assets():
     :return: List of digital assets in json format
     """
     with pool.connection() as con:
-        table = con.table(TABLE_BINANCE)
+        table = con.table(TABLE_INFO)
         keys = [key for key, data in table.scan()]
     return keys
 
