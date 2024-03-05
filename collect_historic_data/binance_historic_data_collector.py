@@ -24,11 +24,11 @@ async def update_available_assets(symbol: str, interval: str, tb_info: HbaseCrud
     """
     async with lock:
         available_asset = tb_info.find_by_id(symbol)
-
+        column_name = "MARKET_DATA:intervals".encode("utf-8")
         intervals = []
 
-        if available_asset is not None:
-            intervals.extend(available_asset["MARKET_DATA:intervals"].split(" "))
+        if any(available_asset):
+            intervals.extend(available_asset[column_name].decode("utf-8").split(" "))
 
         intervals.append(interval)
 
@@ -78,7 +78,7 @@ async def collect_hist_data(symbols: List[str], intervals: List[str], tb_binance
     for symbol in symbols:
         print("[{}/{}] - start download monthly {} klines ".format(current, num_symbols, symbol))
         for interval in intervals:
-            update_available_assets(symbol, interval, tb_info, lock)
+            collectors.append(asyncio.ensure_future(update_available_assets(symbol, interval, tb_info, lock)))
             for year in YEARS:
                 for month in MONTHS:
                     collectors.append(asyncio.ensure_future(
