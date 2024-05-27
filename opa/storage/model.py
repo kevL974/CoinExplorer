@@ -34,7 +34,7 @@ class Asset(HbaseEntity):
 
     def value(self) -> Dict:
         value = " ".join(self.intervals)
-        return {'MARKET_DATA:intervals': "'" + str(value) + "'"}
+        return {'MARKET_DATA:intervals': str(value)}
 
     def id(self) -> str:
         return self.name
