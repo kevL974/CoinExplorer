@@ -14,7 +14,7 @@ color = '#161d22'
 color_text = 'mediumturquoise'
 an_options = [{"inconnu":"inconnu"}]
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
 def serve_controls() -> dash_bootstrap_components.Card:
@@ -86,7 +86,7 @@ def extract_assets_from_response(response: requests.Response) -> List:
 
 @app.callback(
     Output('da-variable', 'options'),
-    [Input('da-variable', 'id')]  # Utilisation d'un input fictif pour déclencher le callback au démarrage
+    [Input('da-variable', 'id')]
 )
 def update_dropdown_options(_):
     response = requests.get(f'http://{OPA_API_URL}/assets')

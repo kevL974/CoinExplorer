@@ -55,12 +55,16 @@ def get_digital_assets():
     Returns digital assets available on server.
     :return: List of digital assets in json format
     """
-    keys = []
+    assets = []
     with pool.connection() as con:
         table = con.table(TABLE_INFO)
-        keys = [key for key, data in table.scan()]
+        result = table.scan()
+        for asset_name, data in result:
+            asset_name = asset_name.decode("utf-8")
+            intervals = data["MARKET_DATA:intervals".encode("utf-8")].decode("utf-8").split(" ")
+            assets.extend([f"{asset_name}|{intervals_i}" for intervals_i in intervals])
 
-    return keys
+    return assets
 
 
 def get_candlesticks_over_a_period(symbol: str, interval: str, start: str, end: str) -> List:
