@@ -5,7 +5,7 @@ WORKDIR /app
 
 ADD api .
 
-RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
+RUN apk update && apk add build-base && pip3 install --upgrade pip && pip3 install --no-cache-dir -r requirements.txt
 
 expose 8000
 
