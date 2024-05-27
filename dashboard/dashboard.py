@@ -1,9 +1,12 @@
+import dash_bootstrap_components
 from dash import Dash, dcc, html, Input, Output, State
 from datetime import date, datetime
+from typing import List
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
 import pandas as pd
+import json
 import os
 
 OPA_API_URL: str = os.getenv("OPA_API_URL")
@@ -14,44 +17,85 @@ an_options = [{"inconnu":"inconnu"}]
 app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 
 
+def serve_controls() -> dash_bootstrap_components.Card:
+    controls = dbc.Card(
+        [
+            html.Div(
+                [
+                    dbc.Label("Actif Numérique"),
+                    dcc.Dropdown(
+                        id="da-variable",
+                        options=[],
+                        value="",
+                    ),
+                ]
+            ),
+            html.Div(
+                [
+                    dbc.Label("Période"),
+                    dcc.Dropdown(
+                        id="dp-variable",
+                        options=[],
+                        value="",
+                    ),
+                ]
+            ),
+            html.Div(
+                [
+                    dbc.Label("Cluster count"),
+                    dbc.Input(id="cluster-count", type="number", value=3),
+                ]
+            ),
+        ],
+        body=True,
+    )
+    return controls
 
-controls = dbc.Card(
-    [
-        html.Div(
-            [
-                dbc.Label("Actif Numérique"),
-                dcc.Dropdown(
-                    id="da-variable",
-                    options=[
-                        {"label": col, "value": col} for col in iris.columns
-                    ],
-                    value="sepal length (cm)",
-                ),
-            ]
-        ),
-        html.Div(
-            [
-                dbc.Label("Y variable"),
-                dcc.Dropdown(
-                    id="y-variable",
-                    options=[
-                        {"label": col, "value": col} for col in iris.columns
-                    ],
-                    value="sepal width (cm)",
-                ),
-            ]
-        ),
-        html.Div(
-            [
-                dbc.Label("Cluster count"),
-                dbc.Input(id="cluster-count", type="number", value=3),
-            ]
-        ),
-    ],
-    body=True,
+
+def serve_layout() -> Dash.layout:
+    layout = dbc.Container(
+        [
+            html.H1("Iris k-means clustering"),
+            html.Hr(),
+            dbc.Row(
+                [
+                    dbc.Col(serve_controls(), md=4),
+                    dbc.Col(dcc.Graph(id="cluster-graph"), md=8),
+                ],
+                align="center",
+            ),
+        ],
+        fluid=True,
+    )
+    return layout
+
+
+def extract_assets_from_response(response: requests.Response) -> List:
+    if response.status_code == requests.codes.ok:
+        try:
+            list_assets = json.loads(response.content)
+            if len(list_assets) == 0:
+                assets_options = [{'label': 'pas d\'actifs numériques disponible'}]
+            else:
+                assets_options = [{'label': asset, 'value': asset} for asset in list_assets]
+
+        except ValueError:
+            assets_options = [{'label': 'Erreur interne'}]
+        return assets_options
+
+
+@app.callback(
+    Output('da-variable', 'options'),
+    [Input('da-variable', 'id')]  # Utilisation d'un input fictif pour déclencher le callback au démarrage
 )
+def update_dropdown_options(_):
+    response = requests.get(f'http://{OPA_API_URL}/assets')
+    return extract_assets_from_response(response)
 
-def set_da_options():
+
+app.layout = serve_layout()
+
+#def set_da_options():
 
 # app.layout = html.Div(
 #     [

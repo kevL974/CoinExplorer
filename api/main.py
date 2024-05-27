@@ -55,9 +55,11 @@ def get_digital_assets():
     Returns digital assets available on server.
     :return: List of digital assets in json format
     """
+    keys = []
     with pool.connection() as con:
         table = con.table(TABLE_INFO)
         keys = [key for key, data in table.scan()]
+
     return keys
 
 
