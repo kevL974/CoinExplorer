@@ -15,8 +15,8 @@ hbase_port = int(os.getenv("DATABASE_PORT"))
 pool = hb.ConnectionPool(size=3, host=hbase_host, port=hbase_port)
 TABLE_BINANCE = 'BINANCE'
 TABLE_INFO = 'INFO'
-COLUMNS = ['CANDLESTICKES:close', 'CANDLESTICKES:close_time', 'CANDLESTICKES:high',
-       'CANDLESTICKES:low', 'CANDLESTICKES:open', 'CANDLESTICKES:volume']
+COLUMNS = ['CANDLESTICKS:close', 'CANDLESTICKS:close_time', 'CANDLESTICKS:high',
+       'CANDLESTICKS:low', 'CANDLESTICKS:open', 'CANDLESTICKS:volume']
 
 
 @app.get('/')
@@ -91,8 +91,8 @@ def to_json_format(candlesticks: List) -> str:
         df = pd.DataFrame(candlesticks).apply(lambda x: x.apply(lambda y: float(y.decode("utf-8").replace('\'', ''))))
         columns = [c.decode("utf-8") for c in df.columns]
         df.columns = columns
-        df['CANDLESTICKES:close_time'] = df['CANDLESTICKES:close_time'].apply(lambda x: int(x))
-        df['date'] = df['CANDLESTICKES:close_time'].apply(lambda x: datetime.fromtimestamp(x / 1000))
+        df['CANDLESTICKS:close_time'] = df['CANDLESTICKS:close_time'].apply(lambda x: int(x))
+        df['date'] = df['CANDLESTICKS:close_time'].apply(lambda x: datetime.fromtimestamp(x / 1000))
         df.set_index('date', inplace=True)
 
     return df.to_json(orient='index')
