@@ -94,6 +94,19 @@ class HbaseCrudRepository:
 
         return results
 
+    @retry_connection_on_ttransportexception(5)
+    def find_all(self) -> List[Dict]:
+        """
+        Returns all instances of the type HbaseEntity
+        :return: guaranteed to be not null.
+        """
+        results = []
+        with self.pool.connection() as con:
+            table = con.table(self.table_name)
+            results.extend(table.scan())
+
+        return results
+
     @retry_connection_on_brokenpipe(5)
     def find_all_between_ids(self, start_id: str, end_id: str) -> List[Dict]:
         """
