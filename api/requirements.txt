@@ -4,3 +4,11 @@ uvloop
 uvicorn
 pandas
 happybase
+python-binance
+kafka-python
+pytest
+tqdm
+aiohttp
+aiofiles
+aiocsv
+async_unzip

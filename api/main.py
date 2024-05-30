@@ -1,22 +1,27 @@
 from fastapi import FastAPI, HTTPException
 from typing import Optional, List, Tuple
 from datetime import datetime
+from opa.storage.repository import HbaseCrudRepository
+from opa.storage.schema import *
 import pandas as pd
-import happybase as hb
 import uvicorn
 import os
 
 app = FastAPI(title="OPA the cryptocurrency genius",
               description="I'm OPA the cryptocurrency genius, make a request and i will grant it...")
 
-hbase_host = os.getenv("DATABASE_HOST")
-hbase_port = int(os.getenv("DATABASE_PORT"))
+db_host = os.getenv("DATABASE_HOST")
+db_port = int(os.getenv("DATABASE_PORT"))
 
-pool = hb.ConnectionPool(size=3, host=hbase_host, port=hbase_port)
-TABLE_BINANCE = 'BINANCE'
-TABLE_INFO = 'INFO'
-COLUMNS = ['CANDLESTICKS:close', 'CANDLESTICKS:close_time', 'CANDLESTICKS:high',
-       'CANDLESTICKS:low', 'CANDLESTICKS:open', 'CANDLESTICKS:volume']
+tb_info_hbase = HbaseCrudRepository(table_name=TABLE_INFO,
+                                    schema=SCHEMA_INFO_TABLE,
+                                    host=db_host,
+                                    port=db_port)
+
+tb_binance_hbase = HbaseCrudRepository(table_name=TABLE_BINANCE,
+                                       schema=SCHEMA_BINANCE_TABLE,
+                                       host=db_host,
+                                       port=db_port)
 
 
 @app.get('/')
@@ -56,13 +61,12 @@ def get_digital_assets():
     :return: List of digital assets in json format
     """
     assets = []
-    with pool.connection() as con:
-        table = con.table(TABLE_INFO)
-        result = table.scan()
-        for asset_name, data in result:
-            asset_name = asset_name.decode("utf-8")
-            intervals = data["MARKET_DATA:intervals".encode("utf-8")].decode("utf-8").split(" ")
-            assets.extend([f"{asset_name}|{intervals_i}" for intervals_i in intervals])
+
+    results = tb_info_hbase.find_all()
+    for asset_name, data in results:
+        asset_name = asset_name.decode("utf-8")
+        intervals = data["MARKET_DATA:intervals".encode("utf-8")].decode("utf-8").split(" ")
+        assets.extend([f"{asset_name}|{intervals_i}" for intervals_i in intervals])
 
     return assets
 
@@ -71,10 +75,9 @@ def get_candlesticks_over_a_period(symbol: str, interval: str, start: str, end: 
     row_start = f"{symbol}-{interval}#{start}"
     row_stop = f"{symbol}-{interval}#{end}"
 
-    with pool.connection() as con:
-        table = con.table(TABLE_BINANCE)
-        candlesticks = [data for key, data in table.scan(row_start=row_start.encode("utf-8"),
-                                                         row_stop=row_stop.encode("utf-8"))]
+    results = tb_binance_hbase.find_all_between_ids(row_start.encode("utf-8"),row_stop.encode("utf-8"))
+
+    candlesticks = [data for key, data in results]
 
     return candlesticks
 
@@ -86,7 +89,7 @@ def to_json_format(candlesticks: List) -> str:
     :return: a json document.
     """
     if not candlesticks:
-        df = pd.DataFrame(data=[], columns=COLUMNS)
+        df = pd.DataFrame(data=[], columns=BINANCE_TABLE_COLUMNS)
     else:
         df = pd.DataFrame(candlesticks).apply(lambda x: x.apply(lambda y: float(y.decode("utf-8").replace('\'', ''))))
         columns = [c.decode("utf-8") for c in df.columns]

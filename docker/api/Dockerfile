@@ -3,6 +3,8 @@ LABEL authors="OPA_Datascientest"
 
 WORKDIR /app
 
+ADD opa ./opa
+
 ADD api .
 
 RUN apk update && apk add build-base && pip3 install --upgrade pip && pip3 install --no-cache-dir -r requirements.txt
