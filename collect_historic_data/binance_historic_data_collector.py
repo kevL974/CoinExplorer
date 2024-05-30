@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+from opa.storage.schema import *
 from opa.storage.repository import HbaseCrudRepository
 from opa.utils import *
 from opa.harvest.enums import *
@@ -9,8 +10,6 @@ from opa.harvest.utility import download_file, convert_to_date_object, get_path
 from tqdm.asyncio import tqdm
 
 BATCH_SIZE = 10000
-SCHEMA_BINANCE_TABLE = {"CANDLESTICKS": dict(), "TECHNICAL_INDICATORS":dict()}
-SCHEMA_INFO_TABLE = {"MARKET_DATA": dict()}
 
 
 async def update_available_assets(symbol: str, interval: str, tb_info: HbaseCrudRepository, lock: asyncio.Lock) -> None:
@@ -119,12 +118,12 @@ if __name__ == "__main__":
     intervals = args.interval
     db_host, db_port = parse_connection_settings(args.database)
 
-    tb_info_hbase = HbaseCrudRepository(table_name='INFO',
+    tb_info_hbase = HbaseCrudRepository(table_name=TABLE_INFO,
                                         schema=SCHEMA_INFO_TABLE,
                                         host=db_host,
                                         port=db_port)
 
-    tb_binance_hbase = HbaseCrudRepository(table_name='BINANCE',
+    tb_binance_hbase = HbaseCrudRepository(table_name=TABLE_BINANCE,
                                            schema=SCHEMA_BINANCE_TABLE,
                                            host=db_host,
                                            port=db_port)
