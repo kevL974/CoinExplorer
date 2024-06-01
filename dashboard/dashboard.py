@@ -2,7 +2,8 @@ import dash_bootstrap_components
 from dash import Dash, dcc, html, Input, Output, State
 from datetime import date, datetime
 from typing import List
-import plotly.graph_objects as go
+from io import StringIO
+from plotly import graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
 import pandas as pd
@@ -161,7 +162,7 @@ def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is
             f'http://{OPA_API_URL}/candlesticks?symbol={symbol}&interval={interval}&start={start_date}&end={end_date}')
 
         if response.status_code == requests.codes.ok:
-            df = pd.read_json(response.json(), orient='index')
+            df = pd.read_json(StringIO(response.json()), orient='index')
 
             if df.empty:
                 print("no data available")
