@@ -128,15 +128,6 @@ def update_dropdown_options(_):
     return extract_assets_from_response(response)
 
 
-# @app.callback(
-#     Output("alert-auto", "is_open"),
-#     [State("alert-auto", "is_open")],
-# )
-# def toggle_alert(is_open):
-#     if id:
-#         return not is_open
-#     return is_open
-
 @app.callback(
     [
         Output("graph", "figure"),
