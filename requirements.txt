@@ -8,3 +8,4 @@ aiohttp
 aiofiles
 aiocsv
 async_unzip
+ta-lib
