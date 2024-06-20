@@ -4,7 +4,7 @@ import numpy as np
 from typing import List, Tuple
 
 
-def simple_mobile_average(price: List, timeperiod: int) -> List[float]:
+def simple_mobile_average(price: List, timeperiod: int) -> np.ndarray:
     """
     Calculates a simple moving average over a series of prices.
     :param price: list of price
