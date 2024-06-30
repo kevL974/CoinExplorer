@@ -3,6 +3,7 @@ from dash import Dash, dcc, html, Input, Output, State
 from datetime import date, datetime
 from typing import List
 from io import StringIO
+from opa.process.technical_indicators import simple_mobile_average
 from plotly import graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
@@ -160,17 +161,31 @@ def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is
                 return fig, not is_open
             else:
                 df = df.sort_index()
+                sma_short_price = simple_mobile_average(df['CANDLESTICKS:close'].array, 20)
+                sma_long_price = simple_mobile_average(df['CANDLESTICKS:close'].array, 60)
                 fig = go.Figure(
-                    go.Candlestick(
-                        x=df['CANDLESTICKS:close_time'],
-                        open=df['CANDLESTICKS:open'],
-                        high=df['CANDLESTICKS:high'],
-                        low=df['CANDLESTICKS:low'],
-                        close=df['CANDLESTICKS:close'],
-                        increasing_line_color='#6DE47A',
-                        decreasing_line_color='#FF4D4D',
-
-                    ))
+                    [
+                        go.Candlestick(
+                            x=df['CANDLESTICKS:close_time'],
+                            open=df['CANDLESTICKS:open'],
+                            high=df['CANDLESTICKS:high'],
+                            low=df['CANDLESTICKS:low'],
+                            close=df['CANDLESTICKS:close'],
+                            increasing_line_color='#6DE47A',
+                            decreasing_line_color='#FF4D4D'),
+                        go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                   y=sma_short_price,
+                                   mode="lines",
+                                   line=go.scatter.Line(color="blue"),
+                                   showlegend=True,
+                                   name="sma_short"),
+                        go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                   y=sma_long_price,
+                                   mode="lines",
+                                   line=go.scatter.Line(color="yellow"),
+                                   showlegend=True,
+                                   name="sma_long")
+                    ])
                 configure_figure(fig)
         else:
             if response.status_code == requests.codes.bad_request:
