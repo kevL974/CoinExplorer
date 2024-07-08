@@ -1,7 +1,6 @@
-
 FROM openjdk:8-jdk
 
-ENV HBASE_VERSION 2.5.7
+ENV HBASE_VERSION 2.5.8
 ENV HBASE_HOME /opt/hbase
 
 RUN apt-get update  &&  apt-get  install -y netcat
