@@ -3,7 +3,7 @@ from dash import Dash, dcc, html, Input, Output, State
 from datetime import date, datetime
 from typing import List
 from io import StringIO
-from opa.process.technical_indicators import simple_mobile_average
+from opa.process.technical_indicators import simple_mobile_average, exponential_mobile_average
 from plotly import graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
@@ -12,6 +12,9 @@ import json
 import os
 
 OPA_API_URL: str = os.getenv("OPA_API_URL")
+SMA_VALUE = 1
+EMA_VALUE = 2
+gbl_df_candlesticks: pd.DataFrame = None
 color = '#303030'
 color_text = '#fff'
 an_options = [{"inconnu": "inconnu"}]
@@ -52,6 +55,20 @@ def serve_controls() -> dash_bootstrap_components.Card:
                     html.Div(id='output-container-date-picker-range',
                              style={'textAlign': 'center'}),
                 ],
+            ),
+            html.Div(
+                [
+                    dbc.Label("Afficher des indicateurs"),
+                    dbc.Checklist(
+                        options=[
+                            {"label": "Simple mobile average", "value": SMA_VALUE},
+                            {"label": "Exponential mobile average", "value": EMA_VALUE},
+                            #{"label": "Disabled Option", "value": 3, "disabled": True},
+                        ],
+                        value=[1],
+                        id="indicators-input"
+                    )
+                ]
             ),
             html.Div(dbc.Button("Lancer la requete", "button"))
         ],
@@ -120,6 +137,63 @@ def configure_figure(figure: go.Figure):
     )
 
 
+def generate_figure_content(df: pd.DataFrame, indicators_value: List) -> List:
+
+    fig_instances_list = []
+    candlesticks_chart = go.Candlestick(
+        x=df['CANDLESTICKS:close_time'],
+        open=df['CANDLESTICKS:open'],
+        high=df['CANDLESTICKS:high'],
+        low=df['CANDLESTICKS:low'],
+        close=df['CANDLESTICKS:close'],
+        increasing_line_color='#6DE47A',
+        decreasing_line_color='#FF4D4D')
+
+    fig_instances_list.append(candlesticks_chart)
+
+    if SMA_VALUE in indicators_value:
+        sma_short_price = simple_mobile_average(df['CANDLESTICKS:close'].array, 20)
+        sma_long_price = simple_mobile_average(df['CANDLESTICKS:close'].array, 60)
+
+        sma_short_scatter = go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                       y=sma_short_price,
+                                       mode="lines",
+                                       line=go.scatter.Line(color="blue"),
+                                       showlegend=True,
+                                       name="sma_short")
+
+        sma_long_scatter = go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                      y=sma_long_price,
+                                      mode="lines",
+                                      line=go.scatter.Line(color="yellow"),
+                                      showlegend=True,
+                                      name="sma_long")
+        fig_instances_list.append(sma_long_scatter)
+        fig_instances_list.append(sma_short_scatter)
+
+    if EMA_VALUE in indicators_value:
+        ema_short_price = exponential_mobile_average(df['CANDLESTICKS:close'].array, 20)
+        ema_long_price = exponential_mobile_average(df['CANDLESTICKS:close'].array, 60)
+        ema_short_scatter = go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                       y=ema_short_price,
+                                       mode="lines",
+                                       line=go.scatter.Line(color="red"),
+                                       showlegend=True,
+                                       name="ema_short")
+
+        ema_long_scatter = go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                      y=ema_long_price,
+                                      mode="lines",
+                                      line=go.scatter.Line(color="pink"),
+                                      showlegend=True,
+                                      name="ema_long")
+
+        fig_instances_list.append(ema_long_scatter)
+        fig_instances_list.append(ema_short_scatter)
+
+    return fig_instances_list
+
+
 @app.callback(
     Output('da-variable', 'options'),
     [Input('da-variable', 'id')]
@@ -139,10 +213,11 @@ def update_dropdown_options(_):
         State('da-variable', 'value'),
         State('interval_date', 'start_date'),
         State('interval_date', 'end_date'),
-        State("alert-auto", "is_open")
+        State("alert-auto", "is_open"),
+        Input("indicators-input", "value")
     ]
 )
-def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is_open: bool):
+def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is_open: bool, indicator_value: bool):
     fig = go.Figure()
     configure_figure(fig)
     if n_clicks:
@@ -154,38 +229,15 @@ def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is
             f'http://{OPA_API_URL}/candlesticks?symbol={symbol}&interval={interval}&start={start_date}&end={end_date}')
 
         if response.status_code == requests.codes.ok:
-            df = pd.read_json(StringIO(response.json()), orient='index')
+            gbl_df_candlesticks = pd.read_json(StringIO(response.json()), orient='index')
 
-            if df.empty:
+            if gbl_df_candlesticks.empty:
                 print("no data available")
                 return fig, not is_open
             else:
-                df = df.sort_index()
-                sma_short_price = simple_mobile_average(df['CANDLESTICKS:close'].array, 20)
-                sma_long_price = simple_mobile_average(df['CANDLESTICKS:close'].array, 60)
-                fig = go.Figure(
-                    [
-                        go.Candlestick(
-                            x=df['CANDLESTICKS:close_time'],
-                            open=df['CANDLESTICKS:open'],
-                            high=df['CANDLESTICKS:high'],
-                            low=df['CANDLESTICKS:low'],
-                            close=df['CANDLESTICKS:close'],
-                            increasing_line_color='#6DE47A',
-                            decreasing_line_color='#FF4D4D'),
-                        go.Scatter(x=df['CANDLESTICKS:close_time'],
-                                   y=sma_short_price,
-                                   mode="lines",
-                                   line=go.scatter.Line(color="blue"),
-                                   showlegend=True,
-                                   name="sma_short"),
-                        go.Scatter(x=df['CANDLESTICKS:close_time'],
-                                   y=sma_long_price,
-                                   mode="lines",
-                                   line=go.scatter.Line(color="yellow"),
-                                   showlegend=True,
-                                   name="sma_long")
-                    ])
+                df = gbl_df_candlesticks.sort_index()
+                fig_instances_list = generate_figure_content(df, indicator_value)
+                fig = go.Figure(fig_instances_list)
                 configure_figure(fig)
         else:
             if response.status_code == requests.codes.bad_request:
