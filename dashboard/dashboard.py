@@ -3,7 +3,8 @@ from dash import Dash, dcc, html, Input, Output, State
 from datetime import date, datetime
 from typing import List
 from io import StringIO
-from opa.process.technical_indicators import simple_mobile_average, exponential_mobile_average
+from opa.process.technical_indicators import simple_mobile_average, exponential_mobile_average, \
+    stochastic_relative_strength_index
 from plotly import graph_objects as go
 import dash_bootstrap_components as dbc
 import requests
@@ -14,6 +15,7 @@ import os
 OPA_API_URL: str = os.getenv("OPA_API_URL")
 SMA_VALUE = 1
 EMA_VALUE = 2
+STCH_RSI_VALUE = 3
 gbl_df_candlesticks: pd.DataFrame = None
 color = '#303030'
 color_text = '#fff'
@@ -63,7 +65,7 @@ def serve_controls() -> dash_bootstrap_components.Card:
                         options=[
                             {"label": "Simple mobile average", "value": SMA_VALUE},
                             {"label": "Exponential mobile average", "value": EMA_VALUE},
-                            #{"label": "Disabled Option", "value": 3, "disabled": True},
+                            {"label": "Stochastic RSI", "value": STCH_RSI_VALUE, "disabled": True},
                         ],
                         value=[1],
                         id="indicators-input"
@@ -138,7 +140,6 @@ def configure_figure(figure: go.Figure):
 
 
 def generate_figure_content(df: pd.DataFrame, indicators_value: List) -> List:
-
     fig_instances_list = []
     candlesticks_chart = go.Candlestick(
         x=df['CANDLESTICKS:close_time'],
@@ -190,6 +191,26 @@ def generate_figure_content(df: pd.DataFrame, indicators_value: List) -> List:
 
         fig_instances_list.append(ema_long_scatter)
         fig_instances_list.append(ema_short_scatter)
+
+    if STCH_RSI_VALUE in indicators_value:
+        stch_k, stch_d = stochastic_relative_strength_index(df['CANDLESTICKS:close'], 60, 30,20)
+        stch_k_rsi_scatter = go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                        y=stch_k,
+                                        yaxis="y2",
+                                        mode="lines",
+                                        line=go.scatter.Line(color="red"),
+                                        showlegend=True,
+                                        name="stch_k")
+        stch_d_rsi_scatter = go.Scatter(x=df['CANDLESTICKS:close_time'],
+                                        y=stch_d,
+                                        yaxis="y2",
+                                        mode="lines",
+                                        line=go.scatter.Line(color="blue"),
+                                        showlegend=True,
+                                        name="stch_d")
+
+        fig_instances_list.append(stch_d_rsi_scatter)
+        fig_instances_list.append(stch_k_rsi_scatter)
 
     return fig_instances_list
 
