@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, TypeVar, Optional
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
+from opa.storage.abstract_repository import HbaseRepository, HbaseEntity, ID, T
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import pandas as pd
 import happybase as hb
+
 
 
 
@@ -63,17 +65,68 @@ class CsvConnector(InputOutputStream):
         return list_hbase_full
 
 
-class HbaseTableConnector(InputOutputStream):
+class HbaseTableConnector(HbaseRepository):
 
-    def __init__(self, host="localhost", port=9090, table_name="BINANCE"):
+    def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090, pool_size=3):
         """
         Initialize Hbase client  and create table if not already exist
+        :param schema:
+        """
+        self.host = host
+        self.port = port
+        self.table_name = table_name
+        self.pool = hb.ConnectionPool(size=pool_size, host=self.host, port=self.port)
+        self.__create_if_not_exist_table(schema)
+
+    @retry_connection_on_ttransportexception
+    def save(self, entity: T) -> T:
+        with self.pool.connection() as con:
+            table = con.table(self.table_name)
+            table.put(entity.id(), entity.value())
+
+    def save_all(self, entities: List[T]):
+        pass
+
+    def find_by_id(self, id: ID) -> Optional[T]:
+        pass
+
+    def find_all(self) -> List[T]:
+        pass
+
+    def find_all_by_id(self, ids: List[ID]) -> List[T]:
+        pass
+
+    def exists_by_id(self, id: ID) -> bool:
+        pass
+
+    def count(self) -> int:
+        pass
+
+    def delete(self, data: T) -> None:
+        pass
+
+    def delete_by_id(self, id: ID) -> None:
+        pass
+
+    def delete_all(self) -> None:
+        pass
+
+    def delete_all_by_entities(self, entities: List[T]) -> None:
+        pass
+
+    def delete_all_by_id(self, ids: List[ID]) -> None:
+        pass
+
+    def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090):
+        """
+        Initialize Hbase client  and create table if not already exist
+        :param schema:
         """
         self.host = host
         self.port = port
         self.table_name = table_name
         self.pool = hb.ConnectionPool(size=3, host=self.host, port=self.port)
-        self.__create_if_not_exist_table()
+        self.__create_if_not_exist_table(schema)
 
     @retry_connection_on_brokenpipe(5)
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
@@ -105,16 +158,17 @@ class HbaseTableConnector(InputOutputStream):
 
         return candlesticks
 
-    def __create_if_not_exist_table(self) -> None:
+    def __create_if_not_exist_table(self, schema: Dict[str,Dict]) -> None:
         """
         Create table with Hbase client  if not exist.
+        :param schema: table  schema.
         :return:
         """
         try:
             with self.pool.connection() as con:
                 list_tables = con.tables()
                 if self.table_name.encode("utf-8") not in list_tables:
-                    con.create_table(self.table_name, {'CANDLESTICKES': dict(), 'TECHNICAL_INDICATORS': dict()})
+                    con.create_table(self.table_name, schema)
         except IOError:
             print("WARN tried to create table BINANCE whereas already created...")
 

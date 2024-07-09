@@ -1,6 +1,7 @@
 import asyncio
 from kafka import KafkaConsumer
-from opa.storage.connector import KafkaConnector, HbaseTableConnector, InputOutputStream
+from opa.storage.connector import KafkaConnector
+from opa.storage.repository import HbaseCrudRepository
 from opa.utils import *
 import argparse
 import json
@@ -14,7 +15,7 @@ def message_consummable(consumer: KafkaConsumer):
         consumer.close()
 
 
-async def store_to_database(consumer: KafkaConsumer, output: InputOutputStream, lock: asyncio.Lock) -> None:
+async def store_to_database(consumer: KafkaConsumer, output: HbaseCrudRepository, lock: asyncio.Lock) -> None:
     """
     Consumes data from Kafka topic and sends it to ouput.
     :param consumer: a Kafka consumer
@@ -27,10 +28,10 @@ async def store_to_database(consumer: KafkaConsumer, output: InputOutputStream, 
         print(msg.value)
         candlestick = dict_to_candlesticks(json.loads(msg.value))
         async with lock:
-            output.write(candlestick)
+            output.save(candlestick)
 
 
-async def process_stream_data(consumers: Dict[str, KafkaConsumer], output: InputOutputStream) -> None:
+async def process_stream_data(consumers: Dict[str, KafkaConsumer], output: HbaseCrudRepository) -> None:
     stream_processors = []
     lock = asyncio.Lock()
     for topic_i, consumer_i in consumers.items():
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     db_host, db_port = parse_connection_settings(args.database)
 
     input_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_consumor")
-    output_hbase = HbaseTableConnector(host=db_host, port=db_port)
+    output_hbase = HbaseCrudRepository("BINANCE", {}, host=db_host, port=db_port)
 
     kafka_consumers = input_kafka.read(topics=topics, mode=KafkaConnector.ONE_CONS_TO_ALL_TOPICS)
 

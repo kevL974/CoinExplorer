@@ -55,16 +55,20 @@ async def csv_to_candlesticks(symbol: str, interval: str, csv_filepath: str) -> 
     :return: a list of Candlestick object
     """
     candlesticks = []
-    async with aio_open(csv_filepath, mode='r', newline='\n') as csvfile:
-        async for row in aiocsv.AsyncReader(csvfile, delimiter=','):
-            candlesticks.append(Candlestick(symbol=symbol,
-                                            interval=interval,
-                                            open_price=float(row[1]),
-                                            high=float(row[2]),
-                                            low=float(row[3]),
-                                            close_price=float(row[4]),
-                                            volume=float(row[5]),
-                                            close_time=int(row[6])))
+    try:
+        async with aio_open(csv_filepath, mode='r', newline='\n') as csvfile:
+            async for row in aiocsv.AsyncReader(csvfile, delimiter=','):
+                candlesticks.append(Candlestick(symbol=symbol,
+                                                interval=interval,
+                                                open_price=float(row[1]),
+                                                high=float(row[2]),
+                                                low=float(row[3]),
+                                                close_price=float(row[4]),
+                                                volume=float(row[5]),
+                                                close_time=int(row[6])))
+    except FileNotFoundError:
+        print(f"CSV file \"{csv_filepath}\" not found")
+
     return candlesticks
 
 
