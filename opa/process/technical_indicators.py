@@ -42,10 +42,20 @@ def stochastic_relative_strength_index(price: List,
     :param fastd_period: d timeperiod for exponential mobile average
     :return:
     """
-    price = np.array(price)
-    stoch_rsi_k, stoch_rsi_d = talib.STOCHRSI(price, timeperiod=timeperiod, fastk_period=fastk_period,
+    np_price = np.array(price)
+    stoch_rsi_k, stoch_rsi_d = talib.STOCHRSI(np_price, timeperiod=timeperiod, fastk_period=fastk_period,
                                               fastd_period=fastd_period, fastd_matype=0)
     return stoch_rsi_k, stoch_rsi_d
+
+
+def relative_strength_index(price: List, timeperiod: int = 10) -> float:
+    """
+        Calculates a relative strength index over a series of prices.
+        :param price: list of price
+        :param timeperiod: timeperiod for rsi
+    """
+    np_price = np.array(price)
+    return talib.RSI(np_price, timeperiod)
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ from thriftpy2.transport.base import TTransportException
 from aiofiles.os import listdir
 from aiofiles.ospath import isdir
 from aiofiles import open as aio_open
+from collections import deque
 import aiocsv
 import csv
 
@@ -180,3 +181,18 @@ def retry_connection_on_ttransportexception(max_retries: int = 5):
         return retry
 
     return retry_connection
+
+
+class TsQueue:
+
+    def __init__(self, maxlen: int = 10) -> None:
+        self._maxlen = maxlen
+        self._dates_qe = deque(maxlen=self._maxlen)
+        self._value_qe = deque(maxlen=self._maxlen)
+
+    def append(self, ts: str, value: float) -> None:
+        self._dates_qe.appendleft(ts)
+        self._value_qe.appendleft(value)
+
+    def tolist(self) -> Tuple[List]:
+        return self._dates_qe, self._value_qe

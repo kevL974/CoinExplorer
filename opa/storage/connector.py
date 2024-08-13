@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, TypeVar, Optional
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
-from opa.storage.abstract_repository import HbaseRepository, HbaseEntity, ID, T
+from opa.storage.repository import HbaseCrudRepository, HbaseEntity
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import pandas as pd
 import happybase as hb
@@ -64,138 +64,6 @@ class CsvConnector(InputOutputStream):
 
         return list_hbase_full
 
-
-class HbaseTableConnector(HbaseRepository):
-
-    def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090, pool_size=3):
-        """
-        Initialize Hbase client  and create table if not already exist
-        :param schema:
-        """
-        self.host = host
-        self.port = port
-        self.table_name = table_name
-        self.pool = hb.ConnectionPool(size=pool_size, host=self.host, port=self.port)
-        self.__create_if_not_exist_table(schema)
-
-    @retry_connection_on_ttransportexception
-    def save(self, entity: T) -> T:
-        with self.pool.connection() as con:
-            table = con.table(self.table_name)
-            table.put(entity.id(), entity.value())
-
-    def save_all(self, entities: List[T]):
-        pass
-
-    def find_by_id(self, id: ID) -> Optional[T]:
-        pass
-
-    def find_all(self) -> List[T]:
-        pass
-
-    def find_all_by_id(self, ids: List[ID]) -> List[T]:
-        pass
-
-    def exists_by_id(self, id: ID) -> bool:
-        pass
-
-    def count(self) -> int:
-        pass
-
-    def delete(self, data: T) -> None:
-        pass
-
-    def delete_by_id(self, id: ID) -> None:
-        pass
-
-    def delete_all(self) -> None:
-        pass
-
-    def delete_all_by_entities(self, entities: List[T]) -> None:
-        pass
-
-    def delete_all_by_id(self, ids: List[ID]) -> None:
-        pass
-
-    def __init__(self, table_name: str, schema: Dict[str,Dict], host="localhost", port=9090):
-        """
-        Initialize Hbase client  and create table if not already exist
-        :param schema:
-        """
-        self.host = host
-        self.port = port
-        self.table_name = table_name
-        self.pool = hb.ConnectionPool(size=3, host=self.host, port=self.port)
-        self.__create_if_not_exist_table(schema)
-
-    @retry_connection_on_brokenpipe(5)
-    def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
-        with self.pool.connection() as con:
-            table = con.table(self.table_name)
-            with table.batch(**options) as b:
-                for candlestick in candlesticks:
-                    b.put(candlestick.key(), candlestick.to_hbase())
-
-    @retry_connection_on_ttransportexception(5)
-    def write(self, candlestick: Candlestick, **options) -> None:
-        with self.pool.connection() as con:
-            table = con.table(self.table_name)
-            table.put(candlestick.key(), candlestick.to_hbase())
-
-    def read(self, **options) -> List:
-        end = options.get('end', None)
-        if end:
-            row_start, row_stop = self.__build_query_row_start_stop(**options)
-            with self.pool.connection() as con:
-                table = con.table(self.table_name)
-                candlesticks = [data for key, data in table.scan(row_start=row_start, row_stop=row_stop)]
-
-        else:
-            row_prefix = self.build_query_row_prefix(**options)
-            with self.pool.connection() as con:
-                table = con.table(self.table_name)
-                candlesticks = [data for key, data in table.scan(row_prefix=row_prefix)]
-
-        return candlesticks
-
-    def __create_if_not_exist_table(self, schema: Dict[str,Dict]) -> None:
-        """
-        Create table with Hbase client  if not exist.
-        :param schema: table  schema.
-        :return:
-        """
-        try:
-            with self.pool.connection() as con:
-                list_tables = con.tables()
-                if self.table_name.encode("utf-8") not in list_tables:
-                    con.create_table(self.table_name, schema)
-        except IOError:
-            print("WARN tried to create table BINANCE whereas already created...")
-
-    @staticmethod
-    def build_query_row_prefix(symbol: str, interval: str, start: int) -> str:
-        """
-        Generates 'row_prefix' parameter for table scan operation.
-        :param symbol: name of crypto assets.
-        :param interval: interval time.
-        :param start: date in string format YYYYMMDD.
-        :return: a row_prefix value in string format.
-        """
-        return f"{symbol}-{interval}#{start}"
-
-    @staticmethod
-    def build_query_row_start_stop(symbol: str, interval: str, start: int, end: int) -> Tuple[str,str]:
-        """
-        Generates 'row_prefix' parameter for table scan operation.
-        :param symbol: name of crypto assets.
-        :param interval: interval time.
-        :param start: date in string format YYYYMMDD.
-        :param end: date in string format YYYYMMDD
-        :return: a tuple that contains row_start parameter in index 0 and row_stop parameter in index 1.
-        """
-        row_start = f"{symbol}-{interval}#{start}"
-        row_stop = f"{symbol}-{interval}#{end}"
-        return row_start, row_stop
 
 class KafkaConnector(InputOutputStream):
 
