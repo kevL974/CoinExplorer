@@ -52,7 +52,7 @@ class RsiIndicator(Indicator):
 
     def value(self) -> float:
         close_time, close_price = self._window.tolist()
-        return relative_strength_index(price=close_price, timeperiod=self._period)
+        return relative_strength_index(close=close_price, timeperiod=self._period)
 
     def __str__(self) -> str:
         return self.NAME + str(self._period)
@@ -98,7 +98,7 @@ class IndicatorSet(ObserverInterface, ObservableInterface):
     def values(self) -> Dict[str, float]:
         indicators_values = {}
         for ind_name, ind_i in self._indicators.items():
-            indicators_values[ind_name] = ind_i.value()[-1]
+            indicators_values[ind_name] = ind_i.value()
 
         indicators_values["CLOSE_PRICE"] = self._last_price
         indicators_values["CLOSE_TIME"] = self._last_ts

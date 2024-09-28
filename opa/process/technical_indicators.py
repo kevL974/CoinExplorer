@@ -1,61 +1,64 @@
-import talib
+from talib import stream
 import pandas as pd
 import numpy as np
 from typing import List, Tuple
 
 
-def simple_mobile_average(price: List, timeperiod: int) -> np.ndarray:
+def simple_mobile_average(price: List, timeperiod: int) -> float:
     """
     Calculates a simple moving average over a series of prices.
     :param price: list of price
     :param timeperiod: timeperiod for simple mobile average
-    :return: list of SMA values
+    :return: Latest SMA value
     """
     array_price = np.array(price)
-    sma_values = talib.SMA(array_price, timeperiod=timeperiod)
+    sma_values = stream.SMA(array_price, timeperiod=timeperiod)
 
     return sma_values
 
 
-def exponential_mobile_average(price: List, timeperiod: int) -> List[float]:
+def exponential_mobile_average(close: List, timeperiod: int) -> float:
     """
     Calculates an exponential moving average over a series of prices.
-    :param price: list of price
+    :param close: list of price
     :param timeperiod: timeperiod for exponential mobile average
-    :return: list of EMA values
+    :return: latest EMA value
     """
-    array_price = np.array(price)
-    exponential_values = talib.EMA(array_price, timeperiod=timeperiod)
+    array_price = np.array(close)
+    exponential_values = stream.EMA(array_price, timeperiod=timeperiod)
 
     return exponential_values
 
 
-def stochastic_relative_strength_index(price: List,
-                                       timeperiod: int = 14,
-                                       fastk_period: int = 5,
+def stochastic_relative_strength_index(close: List, timeperiod: int = 14, fastk_period: int = 5,
                                        fastd_period: int = 3) -> Tuple:
     """
     Calculates a stochastic relative strength index over a series of prices.
-    :param price: list of price
+    :param close: list of price
     :param timeperiod: timeperiod for rsi
     :param fastk_period: k timeperiod for exponential mobile average
     :param fastd_period: d timeperiod for exponential mobile average
     :return:
     """
-    np_price = np.array(price)
-    stoch_rsi_k, stoch_rsi_d = talib.STOCHRSI(np_price, timeperiod=timeperiod, fastk_period=fastk_period,
+    np_price = np.array(close)
+    stoch_rsi_k, stoch_rsi_d = stream.STOCHRSI(np_price, timeperiod=timeperiod, fastk_period=fastk_period,
                                               fastd_period=fastd_period, fastd_matype=0)
     return stoch_rsi_k, stoch_rsi_d
 
 
-def relative_strength_index(price: List, timeperiod: int = 10) -> float:
+def relative_strength_index(close: List, timeperiod: int = 10) -> float:
     """
         Calculates a relative strength index over a series of prices.
-        :param price: list of price
+        :param close: list of price
         :param timeperiod: timeperiod for rsi
+        :return: Latest RSI value
     """
-    np_price = np.array(price)
-    return talib.RSI(np_price, timeperiod)
+    np_price = np.array(close)
+    return stream.RSI(np_price, timeperiod)
+
+
+def stochastic(high: List, low: List, close: List, timeperiod: int = 10) -> float:
+    stream.STOCH()
 
 
 if __name__ == '__main__':
