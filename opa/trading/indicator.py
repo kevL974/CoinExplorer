@@ -163,6 +163,17 @@ class Builder(ABC):
         pass
 
     @abstractmethod
+    def produce_stochastic_indicator(self,
+                                     fastk_period: int,
+                                     slowk_period: int,
+                                     slowk_matype: int,
+                                     slowd_period: int,
+                                     slowd_matype: int
+                                     ) -> None:
+
+        pass
+
+    @abstractmethod
     def reset(self) -> IndicatorSet:
         pass
 
@@ -193,6 +204,14 @@ class IndicatorSetBuilder(Builder):
     def produce_rsi_indicator(self, timeperiod: int) -> None:
         self._indicator_set.add(RsiIndicator(timeperiod))
 
+    def produce_stochastic_indicator(self, fastk_period: int, slowk_period: int, slowk_matype: int, slowd_period: int,
+                                     slowd_matype: int) -> None:
+        self._indicator_set.add(StochasticIndicator(fastk_period=fastk_period,
+                                                    slowk_period=slowk_period,
+                                                    slowk_matype=slowk_matype,
+                                                    slowd_period=slowd_period,
+                                                    slowd_matype=slowd_matype))
+
 
 class Director:
 
@@ -210,3 +229,10 @@ class Director:
     def build_indicators_simple_sma_rsi_strategy(self):
         self._builder.produce_rsi_indicator(10)
         self._builder.produce_sma_indicator(200)
+
+    def build_indicators_swing_trading(self):
+        self._builder.produce_sma_indicator(50)
+        self._builder.produce_sma_indicator(100)
+        self._builder.produce_rsi_indicator(14)
+        self._builder.produce_stochastic_indicator(12, 3, 0, 3, 0)
+
