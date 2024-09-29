@@ -76,7 +76,7 @@ class StochasticIndicator(Indicator):
         self._slowk_period = slowk_period
         self._slowk_matype = slowk_matype
         self._slowd_period = slowd_period
-        self._slowk_matype = slowd_matype
+        self._slowd_matype = slowd_matype
         self._window_high = TsQueue(maxlen=self._fastk_period)
         self._window_close = TsQueue(maxlen=self._fastk_period)
         self._window_low = TsQueue(maxlen=self._fastk_period)
