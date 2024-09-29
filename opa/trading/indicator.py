@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
-import numpy as np
+from talib import stream
 from opa.utils import TsQueue
 from opa.core.candlestick import Candlestick
 from opa.trading.observer import ObserverInterface, ObservableInterface, EventType
 from opa.process.technical_indicators import simple_mobile_average, relative_strength_index
+import numpy as np
 
 
 class Indicator(ABC):
@@ -32,7 +33,7 @@ class SmaIndicator(Indicator):
 
     def value(self) -> float:
         close_time, close_price = self._window.tolist()
-        return simple_mobile_average(price=close_price, timeperiod=self._period)
+        return stream.SMA(np.array(close_price), timeperiod=self._period)
 
     def __str__(self) -> str:
         return self.NAME + str(self._period)
@@ -45,17 +46,62 @@ class RsiIndicator(Indicator):
         if period < 1:
             raise ValueError()
         self._period = period
-        self._window = TsQueue(maxlen=self._period +1)
+        self._window = TsQueue(maxlen=self._period + 1)
 
     def update(self, candlestick: Candlestick) -> None:
         self._window.append(ts=candlestick.close_time, value=candlestick.close)
 
     def value(self) -> float:
         close_time, close_price = self._window.tolist()
-        return relative_strength_index(close=close_price, timeperiod=self._period)
+        return stream.RSI(np.array(close_price), timeperiod=self._period)
 
     def __str__(self) -> str:
         return self.NAME + str(self._period)
+
+
+class StochasticIndicator(Indicator):
+    NAME: str = "Stochastic"
+
+    def __init__(self,
+                 fastk_period: int = 12,
+                 slowk_period: int = 3,
+                 slowk_matype: int = 0,
+                 slowd_period: int = 3,
+                 slowd_matype: int = 0) -> None:
+
+        if (fastk_period < 1) or (slowk_period < 1) or (slowk_matype < 1) or (slowd_period < 1) or (slowd_matype < 1):
+            raise ValueError()
+
+        self._fastk_period = fastk_period
+        self._slowk_period = slowk_period
+        self._slowk_matype = slowk_matype
+        self._slowd_period = slowd_period
+        self._slowk_matype = slowd_matype
+        self._window_high = TsQueue(maxlen=self._fastk_period)
+        self._window_close = TsQueue(maxlen=self._fastk_period)
+        self._window_low = TsQueue(maxlen=self._fastk_period)
+
+    def update(self, candlestick: Candlestick) -> None:
+        self._window_high.append(ts=candlestick.close_time, value=candlestick.high)
+        self._window_close.append(ts=candlestick.close_time, value=candlestick.close)
+        self._window_low.append(ts=candlestick.close_time, value=candlestick.low)
+
+    def value(self) -> float:
+        high = np.array(self._window_high.tolist())
+        close = np.array(self._window_close.tolist())
+        low = np.array(self._window_low.tolist())
+        return stream.STOCH(high,
+                            close,
+                            low,
+                            self._fastk_period,
+                            self._slowk_period,
+                            self._slowk_matype,
+                            self._slowd_period,
+                            self._slowd_matype)
+
+    def __str__(self) -> str:
+        return f"{self.NAME}-{str(self._fastk_period)}-{str(self._slowk_period)}-{str(self._slowd_period)}"
+
 
 
 class IndicatorSet(ObserverInterface, ObservableInterface):

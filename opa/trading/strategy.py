@@ -80,8 +80,6 @@ class Sma200Rsi10Strategy(TradingStrategy):
             in_position = True
             return in_position
 
-        if in_position:
-            if data["RSI10"] =! np.nan:
 
 
 
