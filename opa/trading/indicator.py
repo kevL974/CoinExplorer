@@ -69,7 +69,7 @@ class StochasticIndicator(Indicator):
                  slowd_period: int = 3,
                  slowd_matype: int = 0) -> None:
 
-        if (fastk_period < 1) or (slowk_period < 1) or (slowk_matype < 1) or (slowd_period < 1) or (slowd_matype < 1):
+        if (fastk_period < 1) or (slowk_period < 1) or (slowk_matype < 0) or (slowd_period < 1) or (slowd_matype < 0):
             raise ValueError()
 
         self._fastk_period = fastk_period
