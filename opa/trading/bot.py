@@ -60,6 +60,6 @@ if __name__ == "__main__":
     input_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_bot_consumor")
     kafka_consumers = input_kafka.read(topics=topic, mode=KafkaConnector.ONE_CONS_TO_ALL_TOPICS)
 
-    bot = TradingBot(Sma200Rsi10Strategy())
+    bot = TradingBot(SwingTradingStrategy())
     loop = asyncio.get_event_loop()
     loop.run_until_complete(trade(consumers=kafka_consumers, bot=bot))

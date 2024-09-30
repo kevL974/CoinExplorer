@@ -191,8 +191,8 @@ class TsQueue:
         self._value_qe = deque(maxlen=self._maxlen)
 
     def append(self, ts: str, value: float) -> None:
-        self._dates_qe.appendleft(ts)
-        self._value_qe.appendleft(value)
+        self._dates_qe.append(ts)
+        self._value_qe.append(value)
 
     def tolist(self) -> Tuple[List]:
         return self._dates_qe, self._value_qe

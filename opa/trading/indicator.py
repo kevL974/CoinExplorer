@@ -4,7 +4,6 @@ from talib import stream
 from opa.utils import TsQueue
 from opa.core.candlestick import Candlestick
 from opa.trading.observer import ObserverInterface, ObservableInterface, EventType
-from opa.process.technical_indicators import simple_mobile_average, relative_strength_index
 import numpy as np
 
 
@@ -77,9 +76,9 @@ class StochasticIndicator(Indicator):
         self._slowk_matype = slowk_matype
         self._slowd_period = slowd_period
         self._slowd_matype = slowd_matype
-        self._window_high = TsQueue(maxlen=self._fastk_period)
-        self._window_close = TsQueue(maxlen=self._fastk_period)
-        self._window_low = TsQueue(maxlen=self._fastk_period)
+        self._window_high = TsQueue(maxlen=self._fastk_period+5)
+        self._window_close = TsQueue(maxlen=self._fastk_period+5)
+        self._window_low = TsQueue(maxlen=self._fastk_period+5)
 
     def update(self, candlestick: Candlestick) -> None:
         self._window_high.append(ts=candlestick.close_time, value=candlestick.high)
@@ -87,9 +86,10 @@ class StochasticIndicator(Indicator):
         self._window_low.append(ts=candlestick.close_time, value=candlestick.low)
 
     def value(self) -> float:
-        high = np.array(self._window_high.tolist())
-        close = np.array(self._window_close.tolist())
-        low = np.array(self._window_low.tolist())
+        high = np.array(self._window_high.tolist()[1])
+        close = np.array(self._window_close.tolist()[1])
+        low = np.array(self._window_low.tolist()[1])
+
         return stream.STOCH(high,
                             close,
                             low,
