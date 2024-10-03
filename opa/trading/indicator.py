@@ -76,9 +76,9 @@ class StochasticIndicator(Indicator):
         self._slowk_matype = slowk_matype
         self._slowd_period = slowd_period
         self._slowd_matype = slowd_matype
-        self._window_high = TsQueue(maxlen=self._fastk_period+5)
-        self._window_close = TsQueue(maxlen=self._fastk_period+5)
-        self._window_low = TsQueue(maxlen=self._fastk_period+5)
+        self._window_high: TsQueue = TsQueue(maxlen=self._fastk_period+5)
+        self._window_close: TsQueue = TsQueue(maxlen=self._fastk_period+5)
+        self._window_low: TsQueue = TsQueue(maxlen=self._fastk_period+5)
 
     def update(self, candlestick: Candlestick) -> None:
         self._window_high.append(ts=candlestick.close_time, value=candlestick.high)
@@ -102,6 +102,57 @@ class StochasticIndicator(Indicator):
     def __str__(self) -> str:
         return f"{self.NAME}-{str(self._fastk_period)}-{str(self._slowk_period)}-{str(self._slowd_period)}"
 
+
+class MACDIndicator(Indicator):
+    NAME: str = "MACD"
+
+    def __init__(self,
+                 fastperiod: int = 12,
+                 slowperiod: int = 26,
+                 signalperiod: int = 9) -> None:
+
+        if (fastperiod < 1) or (slowperiod < 1) or (signalperiod < 1):
+            raise ValueError()
+
+        self._fastperiod: int = fastperiod
+        self._slowperiod: int = slowperiod
+        self._signalperiod: int = signalperiod
+        self._window: TsQueue = TsQueue(maxlen=self._slowperiod + self._fastperiod)
+
+    def update(self, candlestick: Candlestick) -> None:
+        self._window.append(ts=candlestick.close_time, value=candlestick.close)
+
+    def value(self) -> float:
+        close_time, close = np.array(self._window.tolist())
+        return stream.MACD(close, self._fastperiod, self._slowperiod, self._signalperiod)
+
+    def __str__(self) -> str:
+        return f"{self.NAME}-{str(self._fastperiod)}-{str(self._slowperiod)}-{str(self._signalperiod)}"
+
+
+class ParabolicSARIndicator(Indicator):
+    NAME: str = "Parabolic SAR"
+
+    def __init__(self, acceleration: float, maximum: float) -> None:
+        if (acceleration < 0) or (maximum < 0):
+            raise ValueError()
+
+        self._acceleration: float = acceleration
+        self._maximum: float = maximum
+        self._window_high: TsQueue = TsQueue()
+        self._window_low: TsQueue = TsQueue()
+
+    def update(self, candlestick: Candlestick) -> None:
+        self._window_high.append(ts=candlestick.close_time, value=candlestick.high)
+        self._window_low.append(ts=candlestick.close_time, value=candlestick.low)
+
+    def value(self) -> float:
+        high = np.array(self._window_high.tolist()[1])
+        low = np.array(self._window_low.tolist()[1])
+        return stream.SAR(high, low, acceleration=0.02, maximum=0.2)
+
+    def __str__(self) -> str:
+        return f"{self.NAME}"
 
 
 class IndicatorSet(ObserverInterface, ObservableInterface):
@@ -174,6 +225,19 @@ class Builder(ABC):
         pass
 
     @abstractmethod
+    def produce_macd_indicator(self,
+                               fastperiod: int,
+                               slowperiod: int,
+                               signalperiod: int) -> None:
+        pass
+
+    @abstractmethod
+    def produce_parabolic_sar_indicator(self,
+                                        acceleration: float,
+                                        maximum: float) -> None:
+        pass
+
+    @abstractmethod
     def reset(self) -> IndicatorSet:
         pass
 
@@ -212,6 +276,16 @@ class IndicatorSetBuilder(Builder):
                                                     slowd_period=slowd_period,
                                                     slowd_matype=slowd_matype))
 
+    def produce_macd_indicator(self, fastperiod: int, slowperiod: int, signalperiod: int) -> None:
+        self._indicator_set.add(MACDIndicator(fastperiod=fastperiod,
+                                              slowperiod=slowperiod,
+                                              signalperiod=signalperiod))
+
+    def produce_parabolic_sar_indicator(self,
+                                        acceleration: float,
+                                        maximum: float) -> None:
+        self._indicator_set.add(ParabolicSARIndicator(acceleration=acceleration, maximum=maximum))
+
 
 class Director:
 
@@ -235,4 +309,7 @@ class Director:
         self._builder.produce_sma_indicator(100)
         self._builder.produce_rsi_indicator(14)
         self._builder.produce_stochastic_indicator(12, 3, 0, 3, 0)
+        self._builder.produce_macd_indicator(12, 26, 9)
+        self._builder.produce_parabolic_sar_indicator(0.02, 0.2)
+
 

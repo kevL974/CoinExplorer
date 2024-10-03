@@ -85,7 +85,7 @@ class SwingTradingStrategy(TradingStrategy):
 
     def __init__(self):
         super().__init__()
-        self._wallet : Dict = {"dollars_qty": 500.0,
+        self._wallet: Dict = {"dollars_qty": 500.0,
                                "assets_qty": 0.0}
 
     def make_indicators_set(self) -> IndicatorSet:
