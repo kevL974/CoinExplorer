@@ -10,7 +10,6 @@ from aiofiles.ospath import isdir
 from aiofiles import open as aio_open
 from collections import deque
 import aiocsv
-import csv
 
 
 def hist_klines_websocket_to_candlestick(symbol: str, interval: str, klines: List[str]) -> Candlestick:
@@ -109,7 +108,6 @@ async def dezip(zip_path: str) -> str:
     """
     Uncompresses zip file given in parameter
     :param zip_path: zip file to be uncompressed.
-    :param file: path of uncompressed file.
     :return:
     """
     pwd = dirname(realpath(__file__))
@@ -190,9 +188,9 @@ class TsQueue:
         self._dates_qe = deque(maxlen=self._maxlen)
         self._value_qe = deque(maxlen=self._maxlen)
 
-    def append(self, ts: str, value: float) -> None:
+    def append(self, ts: int, value: float) -> None:
         self._dates_qe.append(ts)
         self._value_qe.append(value)
 
-    def tolist(self) -> Tuple[List]:
+    def tolist(self) -> Tuple:
         return self._dates_qe, self._value_qe
