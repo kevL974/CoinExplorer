@@ -35,6 +35,7 @@ class TradingStep(ABC):
 
     def __init__(self, context: TradingContext):
         self._context: TradingContext = context
+        self._next_step: TradingStep = None
 
     @property
     def context(self) -> TradingContext:
@@ -43,6 +44,14 @@ class TradingStep(ABC):
     @context.setter
     def context(self, context) -> None:
         self._context = context
+
+    @property
+    def next(self) -> TradingStep:
+        return self._next_step
+
+    @next.setter
+    def next(self, step: TradingStep) -> None:
+        self._next_step = step
 
     @abstractmethod
     def check_condition(self) -> None:

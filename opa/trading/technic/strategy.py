@@ -8,7 +8,7 @@ class TradingStrategy(TradingContext):
         self._indicators: IndicatorSet = indicators
 
     def get_indicator_value_by_name(self, name: str) -> float:
-        self.
+        pass
 
 
 if __name__ == "__main__":

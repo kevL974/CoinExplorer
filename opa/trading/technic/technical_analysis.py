@@ -162,63 +162,18 @@ class ParabolicSARIndicator(Indicator):
         return f"{self.NAME}-{str(self._acceleration)}-{str(self._maximum)}-{self.tunit}"
 
 
-class IndicatorSet(Observer, Subject):
+class IndicatorSet:
 
     def __init__(self):
-        self._obs: List = []
         self._indicators: Dict[str, Indicator] = {}
-        self._current_candlestick: Candlestick = None
-        self._last_price: float = 0.0
-        self._last_ts: str = None
+        self._closes: TsQueue = None
+        self._highs: TsQueue = None
+        self._lows: TsQueue = None
+        self.__configure_queues()
 
-    @property
-    def current_candlestick(self) -> Candlestick:
-        return self._current_candlestick
+    def __configure_queues(self) -> None:
+        pass
 
-    @current_candlestick.setter
-    def current_candlestick(self, candlestick: Candlestick) -> None:
-        self._current_candlestick = candlestick
-
-    def update(self, subject: Candlestick) -> None:
-        if subject.interval in self._indicators:
-            indicators_interval = self._indicators[subject.interval]
-
-            for name, indicator_i in indicators_interval.items():
-                indicator_i.update(subject)
-
-            self._last_price = subject.close
-            self._last_ts = subject.close_time
-            self.notify(EventType.UPDATE, self.values())
-
-    def attach(self, observer: Observer) -> None:
-        self._obs.append(observer)
-
-    def detach(self, observer: Observer) -> None:
-        if observer in self._obs:
-            self.obs.remove(observer)
-
-    def notify(self) -> None:
-        for observer_i in self._obs:
-            observer_i.update(self)
-
-    def add(self, interval: str, indicator: Indicator) -> None:
-        name = self.indicator_description(indicator, interval)
-        if name not in self._indicators:
-            self._indicators[name] = indicator
-
-    def values(self) -> Dict[str, Dict[str, Tuple | float]]:
-        indicator_values = {}
-        for name, indicator in self._indicators.items():
-            try:
-                indicator_values[name] = indicator.value()
-
-            except Exception:
-                indicator_values[name] = np.nan
-
-        indicator_values["CLOSE_PRICE"] = self._last_price
-        indicator_values["CLOSE_TIME"] = self._last_ts
-
-        return indicator_values
 
 
 
