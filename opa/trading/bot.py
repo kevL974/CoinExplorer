@@ -1,5 +1,5 @@
-from opa.trading.strategy import *
-from opa.trading.indicator import *
+from opa.trading.technic.strategy import *
+from opa.trading.technic.technical_analysis import *
 from opa.core.candlestick import Candlestick
 from opa.utils import parse_connection_settings, dict_to_candlesticks
 from opa.storage.connector import KafkaConnector
@@ -23,7 +23,8 @@ class TradingBot:
         self._strategy = strategy
 
     def submit_new_candlestick(self, candlestick: Candlestick) -> None:
-        self._strategy.indicators.update(candlestick)
+        self._strategy.indicators.current_candlestick = candlestick
+        self._strategy.indicators.notify()
 
 
 async def run_bot(consumer: KafkaConsumer, bot: TradingBot) -> None:

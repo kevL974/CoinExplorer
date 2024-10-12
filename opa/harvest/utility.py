@@ -12,7 +12,7 @@ import urllib.request
 from argparse import ArgumentTypeError
 from pathlib import Path
 
-from opa.harvest.enums import *
+from opa.util.binance.enums import *
 
 
 def get_destination_dir(file_url, folder=None):

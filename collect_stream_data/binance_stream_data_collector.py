@@ -4,7 +4,7 @@ import os
 from binance import AsyncClient, BinanceSocketManager
 from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
-from opa.harvest.enums import *
+from opa.util.binance.enums import *
 from typing import List
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")

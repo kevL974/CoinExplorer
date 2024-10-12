@@ -3,7 +3,7 @@ import asyncio
 from opa.storage.schema import *
 from opa.storage.repository import HbaseCrudRepository
 from opa.utils import *
-from opa.harvest.enums import *
+from opa.util.binance.enums import *
 from opa.storage.model import Asset
 from typing import List
 from opa.harvest.utility import download_file, convert_to_date_object, get_path

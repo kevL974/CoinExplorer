@@ -1,4 +1,4 @@
-from opa.harvest.enums import *
+from opa.util.binance.enums import *
 from opa.harvest.utility import download_file, convert_to_date_object, get_path
 import os
 
