@@ -56,3 +56,15 @@ class TradingStep(ABC):
     @abstractmethod
     def check_condition(self) -> None:
         pass
+
+
+class InitStep(TradingStep):
+
+    def check_condition(self) -> None:
+        self.context.transition_to()
+
+
+class CheckBullRunStep(TradingStep):
+
+    def check_condition(self) -> None:
+        self.context.get_indicator_value_by_name()
