@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Tuple, Dict, List
+
+from kafka.errors import IllegalArgumentError
 from talib import stream
 from opa.utils import TsQueue
 from opa.core.candlestick import Candlestick
@@ -10,7 +12,10 @@ import numpy as np
 
 class Indicator(Observer):
 
-    def update(self, subject: Subject) -> None:
+    def __init__(self):
+        super().__init__()
+
+    def update(self) -> None:
         pass
 
     @abstractmethod
@@ -22,10 +27,9 @@ class SmaIndicator(Indicator):
     NAME: str = "SMA"
 
     def __init__(self, period: int) -> None:
+        super().__init__()
         if period < 1:
             raise ValueError()
-
-        super().__init__()
         self._period = period
         self._window = TsQueue(maxlen=self._period)
 
@@ -133,13 +137,13 @@ class MACDIndicator(Indicator):
 
 
 class ParabolicSARIndicator(Indicator):
-    NAME: str = "Parabolic SAR"
+    NAME: str = "SAR"
 
     def __init__(self, acceleration: float, maximum: float) -> None:
+        super().__init__()
         if (acceleration < 0) or (maximum < 0):
             raise ValueError()
 
-        super.__init__()
         self._acceleration: float = acceleration
         self._maximum: float = maximum
         self._window_high: TsQueue = TsQueue()
@@ -163,7 +167,7 @@ class IndicatorSet:
 
     def __init__(self):
         self._indicators: Dict[str, Indicator] = {}
-        self._indicator_value: Dict[str, TsQueue] = {}
+        self._indicator_ts: Dict[str, TsQueue] = {}
         self._closes: Dict[str, TsQueue] = {}
         self._highs: Dict[str, TsQueue] = {}
         self._lows: Dict[str, TsQueue] = {}
@@ -171,7 +175,7 @@ class IndicatorSet:
 
     def add(self, tunit, indicator: Indicator):
         if tunit not in INTERVALS:
-            raise ValueError(f"Time unit {tunit} doesnt exist")
+            raise IllegalArgumentError(f"Time unit {tunit} is not permitted")
 
         self.__add_price_history(tunit)
         self.__add_indicator(tunit, indicator)
@@ -190,13 +194,30 @@ class IndicatorSet:
             self._highs[tunit] = TsQueue(maxlen=IndicatorSet.__MAXSIZE)
 
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
-        id_indicator = self.create_id(tunit, indicator)
+        indicator_id = self.create_id(tunit, indicator)
 
-        if id_indicator not in self._indicators.keys():
-            self._indicators[id_indicator] = indicator
+        if not self.indicator_exist(indicator_id):
+            self._indicators[indicator_id] = indicator
+            self._indicator_ts[indicator_id] = TsQueue()
 
-        if id_indicator not in self._indicator_value.keys():
-            self._indicator_value[id_indicator] = TsQueue()
+    def get_indicator_history(self, indicator_id: str) -> TsQueue:
+        if not self.indicator_exist(indicator_id):
+            raise KeyError(f"Indicator {indicator_id} does not exist")
+
+        return self._indicator_ts[indicator_id]
+
+
+    def get_indicator_value(self, indicator_id: str) -> Tuple[int, float]:
+        if not self.indicator_exist(indicator_id):
+            raise KeyError(f"Indicator {indicator_id} does not exist")
+
+        indicator_history = self.get_indicator_history(indicator_id)
+
+        return indicator_history.last_entry()
+
+    def indicator_exist(self, indicator_id: str) -> bool:
+        return indicator_id in self._indicators.keys()
+
 
     @staticmethod
     def create_id(tunit: str, indicator: Indicator) -> str:
