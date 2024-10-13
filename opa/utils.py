@@ -188,15 +188,21 @@ class TsQueue:
 
     def __init__(self, maxlen: int = 10) -> None:
         self._maxlen = maxlen
-        self._dates_qe = deque(maxlen=self._maxlen)
+        self._timestamp_qe = deque(maxlen=self._maxlen)
         self._values_qe = deque(maxlen=self._maxlen)
 
     def append(self, ts: int, value: float) -> None:
-        self._dates_qe.append(ts)
+        self._timestamp_qe.append(ts)
         self._values_qe.append(value)
 
     def tolist(self) -> Tuple:
-        return self._dates_qe, self._values_qe
+        return self._timestamp_qe, self._values_qe
+
+    def values(self) -> np.ndarray:
+        return np.array(self._values_qe)
+
+    def timestamps(self) -> np.ndarray:
+        return np.array(self._timestamp_qe)
 
     def last_value(self) -> float:
         try:
@@ -206,7 +212,7 @@ class TsQueue:
 
     def last_date(self) -> int:
         try:
-            return self._dates_qe[-1]
+            return self._timestamp_qe[-1]
         except IndexError:
             return np.nan
 
