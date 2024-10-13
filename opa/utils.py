@@ -1,4 +1,7 @@
 from typing import List, Dict, Tuple, Callable
+
+import numpy as np
+
 from opa.harvest.ochlv_constant import *
 from opa.core.candlestick import Candlestick
 from zipfile import BadZipfile
@@ -186,11 +189,28 @@ class TsQueue:
     def __init__(self, maxlen: int = 10) -> None:
         self._maxlen = maxlen
         self._dates_qe = deque(maxlen=self._maxlen)
-        self._value_qe = deque(maxlen=self._maxlen)
+        self._values_qe = deque(maxlen=self._maxlen)
 
     def append(self, ts: int, value: float) -> None:
         self._dates_qe.append(ts)
-        self._value_qe.append(value)
+        self._values_qe.append(value)
 
     def tolist(self) -> Tuple:
-        return self._dates_qe, self._value_qe
+        return self._dates_qe, self._values_qe
+
+    def last_value(self) -> float:
+        try:
+            return self._values_qe[-1]
+        except IndexError:
+            return np.nan
+
+    def last_date(self) -> int:
+        try:
+            return self._dates_qe[-1]
+        except IndexError:
+            return np.nan
+
+    def last_entry(self) -> Tuple[int,float]:
+        return self.last_date(), self.last_value()
+
+
