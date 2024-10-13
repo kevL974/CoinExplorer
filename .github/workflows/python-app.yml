@@ -5,9 +5,9 @@ name: Python application
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "backtesting-motor" ]
   pull_request:
-    branches: [ "dev" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
