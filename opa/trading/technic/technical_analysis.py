@@ -3,6 +3,7 @@ from typing import Tuple, Dict, List
 
 from kafka.errors import IllegalArgumentError
 from talib import stream
+import talib
 from opa.utils import TsQueue
 from opa.core.candlestick import Candlestick
 from opa.util.observer import Observer, Subject, EventType
@@ -19,7 +20,7 @@ class Indicator(Observer):
         pass
 
     @abstractmethod
-    def value(self) -> float:
+    def value(self, highs: TsQueue, lows: TsQueue, closes: TsQueue) -> TsQueue:
         pass
 
 
@@ -29,16 +30,19 @@ class SmaIndicator(Indicator):
     def __init__(self, period: int) -> None:
         super().__init__()
         if period < 1:
-            raise ValueError()
+            raise IllegalArgumentError(f"Period must be positive integer: {period}")
         self._period = period
-        self._window = TsQueue(maxlen=self._period)
 
-    def update(self, candlestick: Candlestick) -> None:
-        self._window.append(ts=candlestick.close_time, value=candlestick.close)
+    def value(self, highs: TsQueue, lows: TsQueue, closes: TsQueue) -> TsQueue:
 
-    def value(self) -> float:
-        close_time, close_price = self._window.tolist()
-        return stream.SMA(np.array(close_price), timeperiod=self._period)
+        sma = talib.SMA(closes.values(), timeperiod=self._period)
+        ts = closes.timestamps()
+        tsq_sma = TsQueue(maxlen=self._period)
+
+        for ts_i, sma_i in zip(ts[-self._period:], sma[-self._period:]):
+            tsq_sma.append(ts_i, sma_i)
+
+        return tsq_sma
 
     def __str__(self) -> str:
         return f"{self.NAME}-{str(self._period)}"
@@ -217,6 +221,21 @@ class IndicatorSet:
 
     def indicator_exist(self, indicator_id: str) -> bool:
         return indicator_id in self._indicators.keys()
+
+    def receive_new_candlestick(self, candlestick: Candlestick) -> None:
+        tunit = candlestick.interval
+        ts = candlestick.close_time
+        close = candlestick.close
+        low = candlestick.low
+        high = candlestick.high
+
+        self._closes[tunit].append(ts,close)
+        self._lows[tunit].append(ts, low)
+        self._highs[tunit].append(ts, high)
+
+        for id, indicator in self._indicators.items():
+            self._indicator_ts[id] = self._indicators[id].value(self._highs, self._lows, self._closes)
+
 
 
     @staticmethod
