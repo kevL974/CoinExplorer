@@ -1,15 +1,15 @@
-from opa.trading.technic.step import TradingStep
+from opa.trading.technic.step import TradingStep, InitStep, CheckBullRunStep
 from opa.trading.technic.technical_analysis import *
 
 
 class Builder(ABC):
 
     @abstractmethod
-    def set_checking_bullrun(self, tunit: str) -> None:
+    def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
         pass
 
     @abstractmethod
-    def set_checking_retest_sma100(self, tunit: str) -> None:
+    def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
         pass
 
     @abstractmethod
@@ -64,8 +64,8 @@ class Director:
         t_1h = "1h"
         t_15m = "15m"
 
-        self._builder.set_checking_bullrun(t_4h)
-        self._builder.set_checking_retest_sma100(t_4h)
+        self._builder.set_checking_bullrun(t_4h, SmaIndicator(20), SmaIndicator(50), RsiIndicator(14))
+        self._builder.set_checking_retest_sma(t_4h, SmaIndicator(100))
         self._builder.set_checking_lower_bollinger_band_breach(t_4h)
         self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(20), SmaIndicator(50))
         self._builder.set_checking_rsi_break_through_neutral_line(t_4h, RsiIndicator(14))
@@ -81,12 +81,12 @@ class IndicatorSetBuilder(Builder):
         self._product: IndicatorSet = None
         self.reset()
 
-    def set_checking_bullrun(self, tunit: str) -> None:
-        self._product.add(tunit, SmaIndicator(20))
-        self._product.add(tunit, SmaIndicator(50))
-        self._product.add(tunit, RsiIndicator(14))
+    def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
+        self._product.add(tunit, sma_short)
+        self._product.add(tunit, sma_long)
+        self._product.add(tunit, rsi)
 
-    def set_checking_retest_sma100(self, tunit: str) -> None:
+    def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
         pass
 
     def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
@@ -120,13 +120,19 @@ class IndicatorSetBuilder(Builder):
 class TradingStepBuilder(Builder):
 
     def __init__(self) -> None:
+        super.__init__()
         self._product: TradingStep = None
+        self._current_step: TradingStep = None
         self.reset()
 
-    def set_checking_bullrun(self, tunit: str) -> None:
-        pass
+    def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
+        id_sma_short = IndicatorSet.create_id(tunit, sma_short)
+        id_sma_long = IndicatorSet.create_id(tunit, sma_long)
+        id_rsi = IndicatorSet.create_id(tunit, rsi)
+        self._current_step.next = CheckBullRunStep(id_sma_short, id_sma_long, id_rsi)
+        self._current_step = self._current_step.next
 
-    def set_checking_retest_sma100(self, tunit: str) -> None:
+    def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
         pass
 
     def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
@@ -149,7 +155,10 @@ class TradingStepBuilder(Builder):
 
     def reset(self) -> None:
         self._product = InitStep()
+        self._current_step = self._product
 
     @property
     def product(self) -> TradingStep:
-        pass
+        product = self._product
+        self.reset()
+        return product

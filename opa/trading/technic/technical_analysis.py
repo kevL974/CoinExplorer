@@ -190,7 +190,7 @@ class IndicatorSet:
             self._highs[tunit] = TsQueue(maxlen=IndicatorSet.__MAXSIZE)
 
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
-        id_indicator = f"{tunit}-{indicator.__str__()}"
+        id_indicator = self.create_id(tunit, indicator)
 
         if id_indicator not in self._indicators.keys():
             self._indicators[id_indicator] = indicator
@@ -198,6 +198,8 @@ class IndicatorSet:
         if id_indicator not in self._indicator_value.keys():
             self._indicator_value[id_indicator] = TsQueue()
 
-
+    @staticmethod
+    def create_id(tunit: str, indicator: Indicator) -> str:
+        return f"{tunit}-{indicator.__str__()}"
 
 
