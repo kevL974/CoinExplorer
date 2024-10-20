@@ -1,26 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Dict, List
+from typing import Dict
 
 from kafka.errors import IllegalArgumentError
-from talib import stream
 import talib
 from opa.utils import TsQueue
 from opa.core.candlestick import Candlestick
-from opa.util.observer import Observer, Subject, EventType
 from opa.util.binance.enums import *
 import numpy as np
 
 
-class Indicator(Observer):
+class Indicator(ABC):
 
     def __init__(self):
         super().__init__()
 
-    def update(self) -> None:
-        pass
-
     @abstractmethod
-    def value(self, highs: TsQueue, lows: TsQueue, closes: TsQueue) -> TsQueue:
+    def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         pass
 
 
@@ -33,16 +28,9 @@ class SmaIndicator(Indicator):
             raise IllegalArgumentError(f"Period must be positive integer: {period}")
         self._period = period
 
-    def value(self, highs: TsQueue, lows: TsQueue, closes: TsQueue) -> TsQueue:
+    def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
+        return talib.SMA(closes, timeperiod=self._period)
 
-        sma = talib.SMA(closes.values(), timeperiod=self._period)
-        ts = closes.timestamps()
-        tsq_sma = TsQueue(maxlen=self._period)
-
-        for ts_i, sma_i in zip(ts[-self._period:], sma[-self._period:]):
-            tsq_sma.append(ts_i, sma_i)
-
-        return tsq_sma
 
     def __str__(self) -> str:
         return f"{self.NAME}-{str(self._period)}"
@@ -53,17 +41,12 @@ class RsiIndicator(Indicator):
 
     def __init__(self, period: int) -> None:
         if period < 1:
-            raise ValueError()
+            raise IllegalArgumentError(f"Period must be positive integer: {period}")
         super().__init__()
         self._period = period
-        self._window = TsQueue(maxlen=self._period + 1)
 
-    def update(self, candlestick: Candlestick) -> None:
-        self._window.append(ts=candlestick.close_time, value=candlestick.close)
-
-    def value(self) -> float:
-        close_time, close_price = self._window.tolist()
-        return stream.RSI(np.array(close_price), timeperiod=self._period)
+    def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
+        return talib.RSI(np.array(closes), timeperiod=self._period)
 
     def __str__(self) -> str:
         return f"{self.NAME}-{str(self._period)}"
@@ -78,8 +61,17 @@ class StochasticIndicator(Indicator):
                  slowk_matype: int = 0,
                  slowd_period: int = 3,
                  slowd_matype: int = 0) -> None:
-        if (fastk_period < 1) or (slowk_period < 1) or (slowk_matype < 0) or (slowd_period < 1) or (slowd_matype < 0):
-            raise ValueError()
+
+        if fastk_period < 1:
+            raise IllegalArgumentError(f"Period must be positive integer: {fastk_period}")
+        if slowk_period < 1:
+            raise IllegalArgumentError(f"Period must be positive integer: {slowk_period}")
+        if slowk_matype < 0:
+            raise IllegalArgumentError(f"Period must be positive integer: {slowk_matype}")
+        if slowd_period < 1:
+            raise IllegalArgumentError(f"Period must be positive integer: {slowd_period}")
+        if slowd_matype < 0:
+            raise IllegalArgumentError(f"Period must be positive integer: {slowd_matype}")
 
         super().__init__()
         self._fastk_period = fastk_period
@@ -87,23 +79,11 @@ class StochasticIndicator(Indicator):
         self._slowk_matype = slowk_matype
         self._slowd_period = slowd_period
         self._slowd_matype = slowd_matype
-        self._window_high: TsQueue = TsQueue(maxlen=self._fastk_period + 5)
-        self._window_close: TsQueue = TsQueue(maxlen=self._fastk_period + 5)
-        self._window_low: TsQueue = TsQueue(maxlen=self._fastk_period + 5)
 
-    def update(self, candlestick: Candlestick) -> None:
-        self._window_high.append(ts=candlestick.close_time, value=candlestick.high)
-        self._window_close.append(ts=candlestick.close_time, value=candlestick.close)
-        self._window_low.append(ts=candlestick.close_time, value=candlestick.low)
-
-    def value(self) -> float:
-        high = np.array(self._window_high.tolist()[1])
-        close = np.array(self._window_close.tolist()[1])
-        low = np.array(self._window_low.tolist()[1])
-
-        return stream.STOCH(high,
-                            close,
-                            low,
+    def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
+        return talib.STOCH(highs,
+                            closes,
+                            lows,
                             self._fastk_period,
                             self._slowk_period,
                             self._slowk_matype,
@@ -121,20 +101,20 @@ class MACDIndicator(Indicator):
                  fastperiod: int = 12,
                  slowperiod: int = 26,
                  signalperiod: int = 9) -> None:
-        if (fastperiod < 1) or (slowperiod < 1) or (signalperiod < 1):
-            raise ValueError()
+        if fastperiod < 1:
+            raise IllegalArgumentError(f"Period must be positive integer: {fastperiod}")
+        if slowperiod < 1 :
+            raise IllegalArgumentError(f"Period must be positive integer: {slowperiod}")
+        if signalperiod < 1:
+            raise IllegalArgumentError(f"Period must be positive integer: {signalperiod}")
+
         super().__init__()
         self._fastperiod: int = fastperiod
         self._slowperiod: int = slowperiod
         self._signalperiod: int = signalperiod
-        self._window: TsQueue = TsQueue(maxlen=self._slowperiod + self._fastperiod)
 
-    def update(self, candlestick: Candlestick) -> None:
-        self._window.append(ts=candlestick.close_time, value=candlestick.close)
-
-    def value(self) -> float:
-        close_time, close = np.array(self._window.tolist())
-        return stream.MACD(close, self._fastperiod, self._slowperiod, self._signalperiod)
+    def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
+        return talib.MACD(closes, self._fastperiod, self._slowperiod, self._signalperiod)
 
     def __str__(self) -> str:
         return f"{self.NAME}-{str(self._fastperiod)}-{str(self._slowperiod)}-{str(self._signalperiod)}"
@@ -150,17 +130,9 @@ class ParabolicSARIndicator(Indicator):
 
         self._acceleration: float = acceleration
         self._maximum: float = maximum
-        self._window_high: TsQueue = TsQueue()
-        self._window_low: TsQueue = TsQueue()
 
-    def update(self, candlestick: Candlestick) -> None:
-        self._window_high.append(ts=candlestick.close_time, value=candlestick.high)
-        self._window_low.append(ts=candlestick.close_time, value=candlestick.low)
-
-    def value(self) -> float:
-        high = np.array(self._window_high.tolist()[1])
-        low = np.array(self._window_low.tolist()[1])
-        return stream.SAR(high, low, acceleration=0.02, maximum=0.2)
+    def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
+        return talib.SAR(highs, lows, acceleration=0.02, maximum=0.2)
 
     def __str__(self) -> str:
         return f"{self.NAME}-{str(self._acceleration)}-{str(self._maximum)}"
@@ -170,8 +142,8 @@ class IndicatorSet:
     __MAXSIZE: int = 200
 
     def __init__(self):
-        self._indicators: Dict[str, Indicator] = {}
-        self._indicator_ts: Dict[str, TsQueue] = {}
+        self._indicators: Dict[str, Dict[str, Indicator]] = {}
+        self._indicator_ts: Dict[str, np.ndarray] = {}
         self._closes: Dict[str, TsQueue] = {}
         self._highs: Dict[str, TsQueue] = {}
         self._lows: Dict[str, TsQueue] = {}
@@ -200,27 +172,39 @@ class IndicatorSet:
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
         indicator_id = self.create_id(tunit, indicator)
 
-        if not self.indicator_exist(indicator_id):
-            self._indicators[indicator_id] = indicator
-            self._indicator_ts[indicator_id] = TsQueue()
+        if tunit not in self._indicators.keys():
+            self._indicators[tunit] = {}
 
-    def get_indicator_history(self, indicator_id: str) -> TsQueue:
+        if not self.indicator_exist(indicator_id):
+            self._indicators[tunit][indicator_id] = indicator
+            self._indicator_ts[indicator_id] = np.array([np.nan] for x in range(0, IndicatorSet.__MAXSIZE, 1))
+
+    def __update_indicators(self, tunit: str) -> None:
+        np_highs = self._highs[tunit].values()
+        np_lows = self._lows[tunit].values()
+        np_closes = self._closes[tunit].values()
+
+        for id, indicator in self._indicators[tunit].items():
+            self._indicator_ts[id] = indicator.value(np_highs, np_lows, np_closes)
+
+    def get_indicator_history(self, indicator_id: str) -> np.ndarray:
         if not self.indicator_exist(indicator_id):
             raise KeyError(f"Indicator {indicator_id} does not exist")
 
         return self._indicator_ts[indicator_id]
 
 
-    def get_indicator_value(self, indicator_id: str) -> Tuple[int, float]:
-        if not self.indicator_exist(indicator_id):
-            raise KeyError(f"Indicator {indicator_id} does not exist")
-
+    def get_indicator_value(self, indicator_id: str) -> float:
         indicator_history = self.get_indicator_history(indicator_id)
 
-        return indicator_history.last_entry()
+        return indicator_history[-1]
 
     def indicator_exist(self, indicator_id: str) -> bool:
-        return indicator_id in self._indicators.keys()
+        for tunit, indicators in self._indicators.items():
+            if indicator_id in indicators.keys():
+                return True
+
+        return False
 
     def receive_new_candlestick(self, candlestick: Candlestick) -> None:
         tunit = candlestick.interval
@@ -233,10 +217,7 @@ class IndicatorSet:
         self._lows[tunit].append(ts, low)
         self._highs[tunit].append(ts, high)
 
-        for id, indicator in self._indicators.items():
-            self._indicator_ts[id] = self._indicators[id].value(self._highs, self._lows, self._closes)
-
-
+        self.__update_indicators(tunit)
 
     @staticmethod
     def create_id(tunit: str, indicator: Indicator) -> str:

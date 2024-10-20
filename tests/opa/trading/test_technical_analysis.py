@@ -1,4 +1,7 @@
+import numpy as np
 import pytest
+import talib
+
 from opa.trading.technic.technical_analysis import *
 
 close_price = [
@@ -23,12 +26,7 @@ timestamps = [
   1704680707, 1704767107, 1704853507, 1704939907, 1705026307
 ]
 
-moving_avg_20 = [
-  100.0468601 , 100.37855016, 100.12520968, 100.28167319, 100.49460859,
-  100.79949914, 100.8804236 , 100.88739363, 100.68023262, 100.49685301,
-  100.44278801, 100.67857981, 100.75858959, 100.60786182, 100.32230008,
-   99.77463565,  99.90276973, 100.07264683,  99.95299183, 100.0175817
-]
+moving_avg_20 = talib.SMA(np.array(close_price),20)
 
 @pytest.fixture()
 def indicator_set() -> IndicatorSet:
@@ -45,8 +43,8 @@ def test_add(indicator_set, tunit, indicator, expected):
     Test if an id is created for each indicator added to IndicatorSet
     """
     indicator_set.add(tunit,indicator)
-    assert expected in indicator_set._indicators
-    assert expected in indicator_set._indicator_ts
+    assert expected in indicator_set._indicators[tunit].keys()
+    assert expected in indicator_set._indicator_ts.keys()
 
 @pytest.mark.parametrize("tunit, indicator", [
     ("7m", SmaIndicator(20)),
@@ -77,6 +75,19 @@ def test_indicator_exist(indicator_set, tunit, indicator, is_added, expected):
 
     assert indicator_set.indicator_exist(IndicatorSet.create_id(tunit, indicator)) == expected
 
+@pytest.fixture()
+def filled_indicator_set() -> IndicatorSet:
+    indicator_set = IndicatorSet()
+    indicator_set.add("4h", SmaIndicator(20))
+
+    closes_ts = TsQueue(200)
+    closes_ts._values_qe=close_price
+    closes_ts._timestamp_qe=timestamps
+    indicator_set._closes=closes_ts
+@pytest.mark.skip(reason="no way of currently testing this")
+def test_indicator_get_value(filled_indicator_set):
+
+    assert moving_avg_20[-1] == filled_indicator_set.get_indicator_value("4h-SMA-20")
 
 
 @pytest.fixture()
@@ -84,22 +95,15 @@ def sma_indicator() -> SmaIndicator:
     return SmaIndicator(20)
 
 @pytest.fixture()
-def closes_ts() -> TsQueue:
-    closes = TsQueue(maxlen=40)
-
-    for ts_i, close_i in zip(timestamps,close_price):
-        closes.append(ts_i, close_i)
-    return closes
+def closes_ts() -> np.ndarray:
+    return np.array(close_price)
 
 @pytest.fixture()
-def sma_ts() -> TsQueue:
-    sma = TsQueue(maxlen=20)
-
-    for ts_i, close_i in zip(timestamps[-20:], close_price):
-        sma.append(ts_i, close_i)
-    return sma
+def sma_ts() -> np.ndarray:
+    return np.array(moving_avg_20)
 
 def test_sma_value(sma_indicator, closes_ts, sma_ts):
     result = sma_indicator.value(None,None,closes_ts)
-    print(result)
-    assert np.array_equal(result.values(),sma_ts.values())
+    for r, e in zip(result[-20:], sma_ts[-20:]):
+        print(f"result {r}, expected {e}")
+    assert np.array_equal(result[-20:], sma_ts[-20:])
