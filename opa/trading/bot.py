@@ -1,3 +1,4 @@
+from opa.trading.technic.builder import Director, IndicatorSetBuilder, TradingStepBuilder
 from opa.trading.technic.strategy import *
 from opa.trading.technic.technical_analysis import *
 from opa.core.candlestick import Candlestick
@@ -7,6 +8,8 @@ from kafka import KafkaConsumer
 import argparse
 import asyncio
 import json
+
+from tests.opa.trading.test_technical_analysis import indicator_set
 
 
 class TradingBot:
@@ -23,8 +26,8 @@ class TradingBot:
         self._strategy = strategy
 
     def submit_new_candlestick(self, candlestick: Candlestick) -> None:
-        self._strategy.indicators.current_candlestick = candlestick
-        self._strategy.indicators.notify()
+        self._strategy.indicators.receive_new_candlestick(candlestick)
+        self._strategy.current_step.check_condition()
 
 
 async def run_bot(consumer: KafkaConsumer, bot: TradingBot) -> None:
@@ -61,6 +64,15 @@ if __name__ == "__main__":
     input_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_bot_consumor")
     kafka_consumers = input_kafka.read(topics=topic, mode=KafkaConnector.ONE_CONS_TO_ALL_TOPICS)
 
-    bot = TradingBot(SwingTradingStrategy())
+    director = Director()
+    director.builder = IndicatorSetBuilder()
+    director.make_day_trading_strategy()
+    indicators = director.builder.product
+
+    director.builder = TradingStepBuilder()
+    director.make_day_trading_strategy()
+    steps = director.builder.product
+
+    bot = TradingBot(DayTradingStrategy(steps, indicators))
     loop = asyncio.get_event_loop()
     loop.run_until_complete(trade(consumers=kafka_consumers, bot=bot))

@@ -78,6 +78,7 @@ class Director:
 class IndicatorSetBuilder(Builder):
 
     def __init__(self) -> None:
+        super().__init__()
         self._product: IndicatorSet = None
         self.reset()
 
@@ -120,7 +121,7 @@ class IndicatorSetBuilder(Builder):
 class TradingStepBuilder(Builder):
 
     def __init__(self) -> None:
-        super.__init__()
+        super().__init__()
         self._product: TradingStep = None
         self._current_step: TradingStep = None
         self.reset()
