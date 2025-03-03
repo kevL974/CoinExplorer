@@ -1,10 +1,11 @@
 from opa.trading.technic.context import TradingContext
 from opa.trading.technic.technical_analysis import *
+from __future__ import annotations
 
 
 class TradingStep(ABC):
 
-    def __init__(self):
+    def __init__(self, context: TradingContext):
         self._context: TradingContext = context
         self._next_step: TradingStep = None
 
