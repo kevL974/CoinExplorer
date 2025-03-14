@@ -1,5 +1,5 @@
-from opa.trading.technic.step import TradingStep, InitStep, CheckBullRunStep
-from opa.trading.technic.technical_analysis import *
+from opa.trading.step import TradingStep, InitStep, CheckBullRunStep, RetestSmaStep
+from opa.trading.technic.analysis import *
 
 
 class Builder(ABC):
@@ -64,7 +64,7 @@ class Director:
         t_1h = "1h"
         t_15m = "15m"
 
-        self._builder.set_checking_bullrun(t_4h, SmaIndicator(20), SmaIndicator(50), RsiIndicator(14))
+        self._builder.set_checking_bullrun("5m", SmaIndicator(20), SmaIndicator(50), RsiIndicator(14))
         self._builder.set_checking_retest_sma(t_4h, SmaIndicator(100))
         self._builder.set_checking_lower_bollinger_band_breach(t_4h)
         self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(20), SmaIndicator(50))
@@ -134,7 +134,9 @@ class TradingStepBuilder(Builder):
         self._current_step = self._current_step.next
 
     def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
-        pass
+        id_sma = IndicatorSet.create_id(tunit, sma)
+        self._current_step.next = RetestSmaStep(id_sma)
+        self._current_step = self._current_step.next
 
     def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
         pass

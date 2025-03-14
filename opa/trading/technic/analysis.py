@@ -148,16 +148,21 @@ class IndicatorSet:
         self._highs: Dict[str, TsQueue] = {}
         self._lows: Dict[str, TsQueue] = {}
         self.__configure_queues()
+        self._authorized_tunit=[]
 
     def add(self, tunit, indicator: Indicator):
-        if tunit not in INTERVALS:
-            raise IllegalArgumentError(f"Time unit {tunit} is not permitted")
-
+        self.__add_tunit_filter(tunit)
         self.__add_price_history(tunit)
         self.__add_indicator(tunit, indicator)
 
     def __configure_queues(self) -> None:
         pass
+
+    def __add_tunit_filter(self, tunit: str) -> None:
+        if tunit not in INTERVALS:
+            raise IllegalArgumentError(f"Time unit {tunit} is not permitted")
+
+        self._authorized_tunit.append(tunit)
 
     def __add_price_history(self, tunit: str) -> None:
         if tunit not in self._closes.keys():
@@ -199,12 +204,17 @@ class IndicatorSet:
 
         return indicator_history[-1]
 
+    def get_close_value(self,):
+
     def indicator_exist(self, indicator_id: str) -> bool:
         for tunit, indicators in self._indicators.items():
             if indicator_id in indicators.keys():
                 return True
 
         return False
+
+    def is_authorized(self, tunit: str) -> bool:
+        return tunit in self._authorized_tunit
 
     def receive_new_candlestick(self, candlestick: Candlestick) -> None:
         tunit = candlestick.interval
@@ -213,14 +223,16 @@ class IndicatorSet:
         low = candlestick.low
         high = candlestick.high
 
-        self._closes[tunit].append(ts,close)
-        self._lows[tunit].append(ts, low)
-        self._highs[tunit].append(ts, high)
-
-        self.__update_indicators(tunit)
+        if self.is_authorized(tunit):
+            self._closes[tunit].append(ts,close)
+            self._lows[tunit].append(ts, low)
+            self._highs[tunit].append(ts, high)
+            self.__update_indicators(tunit)
 
     @staticmethod
     def create_id(tunit: str, indicator: Indicator) -> str:
         return f"{tunit}-{indicator.__str__()}"
 
-
+    @staticmethod
+    def get_tunit_from_id(id_indicator: str) -> str:
+        return str.split(id_indicator,"-")[0]
