@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import talib
 
-from opa.trading.technic.technical_analysis import *
+from opa.trading.technic.analysis import *
 
 close_price = [
   102.48357077,  99.30867849, 103.23844269, 107.61514928,  98.82923313,

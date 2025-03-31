@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, List
 
 from kafka.errors import IllegalArgumentError
 import talib
@@ -236,3 +236,68 @@ class IndicatorSet:
     @staticmethod
     def get_tunit_from_id(id_indicator: str) -> str:
         return str.split(id_indicator,"-")[0]
+
+class Environment:
+
+    __MAXSIZE: int = 200
+
+    def __init__(self):
+        self._timegroup: Dict[str, Dict[str, Indicator]] = {}
+        self._indicator_ts: Dict[str, np.ndarray] = {}
+        self._closes: Dict[str, TsQueue] = {}
+        self._highs: Dict[str, TsQueue] = {}
+        self._lows: Dict[str, TsQueue] = {}
+
+    @property
+    def timegroups(self) -> List[str]:
+        return self._timegroup.keys()
+
+    def receive_new_candlestick(self, candlestick: Candlestick) -> None:
+        """
+        Saves candlestick data and updates all indicators
+        :param candlestick: Candlestick - A trading candlestick
+        :return:
+        """
+        id_tunit = candlestick.interval
+        ts = candlestick.close_time
+        close = candlestick.close
+        low = candlestick.low
+        high = candlestick.high
+
+        self.__update_price_movement(candlestick)
+        self.__update_indicators(candlestick)
+
+
+    def assign_to_timegroup(self, new_indicator: Indicator, id_tunit: str) -> None:
+        """
+        Assigns a new indicator to a time group.
+        :param new_indicator: Indicator - An technical indicator
+        :param id_tunit: str - Time identifier like ['1h','5m', '1d']
+        :return: None
+        """
+        tgroup = self.get_timegroup(id_tunit)
+        id_indicator = self.create_identifier(id_tunit, new_indicator)
+        tgroup[id_indicator] = new_indicator
+
+
+    def get_timegroup(self, id_tunit: str) -> Dict[str, Indicator]:
+        """
+        Returns a time groupe according to identifier given in parameter.
+        :param id_tunit: str - Time identifier like ['1h','5m', '1d']
+        :return: Dict[str,Indicator] - An time group
+        """
+        tgroup = self._timegroup.get(id_tunit)
+
+        if not tgroup:
+            tgroup = {}
+            self._timegroup[id_tunit] = tgroup
+
+        return tgroup
+
+    def __update_price_movement(self, candlestick: Candlestick):
+        id_tunit = candlestick.interval
+        self.__update_price_movement_by_tunit(id_tunit, candlestick)
+
+    @staticmethod
+    def create_identifier(id_tunit: str, indicator: Indicator) -> str:
+        return f"{id_tunit}-{indicator.__str__()}"

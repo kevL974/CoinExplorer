@@ -1,5 +1,5 @@
-from opa.trading.technic.builder import Builder
-from opa.trading.technic.step import *
+from opa.trading.builder import Builder
+from opa.trading.step import *
 
 
 class IndicatorSetBuilder(Builder):
