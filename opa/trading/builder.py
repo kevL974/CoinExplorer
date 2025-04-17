@@ -79,13 +79,13 @@ class IndicatorSetBuilder(Builder):
 
     def __init__(self) -> None:
         super().__init__()
-        self._product: IndicatorSet = None
+        self._product: Environment = None
         self.reset()
 
     def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
-        self._product.add(tunit, sma_short)
-        self._product.add(tunit, sma_long)
-        self._product.add(tunit, rsi)
+        self._product.add_indicator(tunit, sma_short)
+        self._product.add_indicator(tunit, sma_long)
+        self._product.add_indicator(tunit, rsi)
 
     def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
         pass
@@ -109,10 +109,10 @@ class IndicatorSetBuilder(Builder):
         pass
 
     def reset(self) -> None:
-        self._product = IndicatorSet()
+        self._product = Environment()
 
     @property
-    def product(self) -> IndicatorSet:
+    def product(self) -> Environment:
         product = self._product
         self.reset()
         return product
@@ -127,14 +127,14 @@ class TradingStepBuilder(Builder):
         self.reset()
 
     def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
-        id_sma_short = IndicatorSet.create_id(tunit, sma_short)
-        id_sma_long = IndicatorSet.create_id(tunit, sma_long)
-        id_rsi = IndicatorSet.create_id(tunit, rsi)
+        id_sma_short = Environment.create_id(tunit, sma_short)
+        id_sma_long = Environment.create_id(tunit, sma_long)
+        id_rsi = Environment.create_id(tunit, rsi)
         self._current_step.next = CheckBullRunStep(id_sma_short, id_sma_long, id_rsi)
         self._current_step = self._current_step.next
 
     def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
-        id_sma = IndicatorSet.create_id(tunit, sma)
+        id_sma = Environment.create_id(tunit, sma)
         self._current_step.next = RetestSmaStep(id_sma)
         self._current_step = self._current_step.next
 

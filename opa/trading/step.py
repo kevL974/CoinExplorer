@@ -59,9 +59,9 @@ class CheckBullRunStep(TradingStep):
         self._id_rsi: str = id_rsi
 
     def check_condition(self) -> None:
-        sma_short = self.context.get_indicator_values_by_name(self._id_sma_short)
-        sma_long = self.context.get_indicator_values_by_name(self._id_sma_long)
-        rsi = self.context.get_indicator_values_by_name(self._id_rsi)
+        sma_short = self.context.indicator_history(self._id_sma_short)
+        sma_long = self.context.indicator_history(self._id_sma_long)
+        rsi = self.context.indicator_history(self._id_rsi)
 
         if(sma_short.ndim > 0) and (len(sma_short) > 0):
             if (sma_short[-1] > sma_long[-1]) and (rsi[-1] > 50.0):
@@ -85,8 +85,8 @@ class RetestSmaStep(TradingStep):
         self._id_sma: str = id_sma
 
     def check_condition(self) -> None:
-        sma = self.context.get_indicator_values_by_name(self._id_sma)
-        current = self.context._indicators
+        sma = self.context.indicator_history(self._id_sma)
+        current = self.context._environment
         if(sma.ndim > 0) and (len(sma) > 0):
 
 

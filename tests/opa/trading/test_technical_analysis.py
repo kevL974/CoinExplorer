@@ -29,8 +29,8 @@ timestamps = [
 moving_avg_20 = talib.SMA(np.array(close_price),20)
 
 @pytest.fixture()
-def indicator_set() -> IndicatorSet:
-    return IndicatorSet()
+def indicator_set() -> Environment:
+    return Environment()
 
 @pytest.mark.parametrize("tunit, indicator, expected", [
     ("4h", SmaIndicator(20), "4h-SMA-20"),
@@ -73,11 +73,11 @@ def test_indicator_exist(indicator_set, tunit, indicator, is_added, expected):
     if is_added:
         indicator_set.add(tunit,indicator)
 
-    assert indicator_set.indicator_exist(IndicatorSet.create_id(tunit, indicator)) == expected
+    assert indicator_set.indicator_exist(Environment.create_id(tunit, indicator)) == expected
 
 @pytest.fixture()
-def filled_indicator_set() -> IndicatorSet:
-    indicator_set = IndicatorSet()
+def filled_indicator_set() -> Environment:
+    indicator_set = Environment()
     indicator_set.add("4h", SmaIndicator(20))
 
     closes_ts = TsQueue(200)

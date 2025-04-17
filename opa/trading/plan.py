@@ -9,13 +9,13 @@ class IndicatorSetBuilder(Builder):
         self.reset()
 
     @property
-    def product(self) -> IndicatorSet:
+    def product(self) -> Environment:
         indicator_set = self._indicator_set
         self.reset()
         return indicator_set
 
-    def reset(self) -> IndicatorSet:
-        self._indicator_set = IndicatorSet()
+    def reset(self) -> Environment:
+        self._indicator_set = Environment()
 
     def set_sma_crossover_checker(self, tunit1: str, tperiod1: int, tunit2: str, tperiod2: int) -> None:
         self._indicator_set.add(tunit1, SmaIndicator(tperiod1))

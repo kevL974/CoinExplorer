@@ -166,13 +166,13 @@ class IndicatorSet:
 
     def __add_price_history(self, tunit: str) -> None:
         if tunit not in self._closes.keys():
-            self._closes[tunit] = TsQueue(maxlen=IndicatorSet.__MAXSIZE)
+            self._closes[tunit] = TsQueue(maxlen=Environment.__MAXSIZE)
 
         if tunit not in self._lows.keys():
-            self._lows[tunit] = TsQueue(maxlen=IndicatorSet.__MAXSIZE)
+            self._lows[tunit] = TsQueue(maxlen=Environment.__MAXSIZE)
 
         if tunit not in self._highs.keys():
-            self._highs[tunit] = TsQueue(maxlen=IndicatorSet.__MAXSIZE)
+            self._highs[tunit] = TsQueue(maxlen=Environment.__MAXSIZE)
 
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
         indicator_id = self.create_id(tunit, indicator)
@@ -182,7 +182,7 @@ class IndicatorSet:
 
         if not self.indicator_exist(indicator_id):
             self._indicators[tunit][indicator_id] = indicator
-            self._indicator_ts[indicator_id] = np.array([np.nan] for x in range(0, IndicatorSet.__MAXSIZE, 1))
+            self._indicator_ts[indicator_id] = np.array([np.nan] for x in range(0, Environment.__MAXSIZE, 1))
 
     def __update_indicators(self, tunit: str) -> None:
         np_highs = self._highs[tunit].values()
@@ -238,35 +238,29 @@ class IndicatorSet:
         return str.split(id_indicator,"-")[0]
 
 class Environment:
-
     __MAXSIZE: int = 200
 
     def __init__(self):
-        self._timegroup: Dict[str, Dict[str, Indicator]] = {}
-        self._indicator_ts: Dict[str, np.ndarray] = {}
-        self._closes: Dict[str, TsQueue] = {}
-        self._highs: Dict[str, TsQueue] = {}
-        self._lows: Dict[str, TsQueue] = {}
+        self.indicators_manager: IndicatorManager = IndicatorManager(Environment.__MAXSIZE)
+        self.price_manager: PriceManager = PriceManager(Environment.__MAXSIZE)
 
-    @property
-    def timegroups(self) -> List[str]:
-        return self._timegroup.keys()
-
-    def receive_new_candlestick(self, candlestick: Candlestick) -> None:
+    def put(self, candlestick: Candlestick) -> None:
         """
-        Saves candlestick data and updates all indicators
+        Puts candlestick data into asset history and updates all indicators
         :param candlestick: Candlestick - A trading candlestick
         :return:
         """
-        id_tunit = candlestick.interval
-        ts = candlestick.close_time
-        close = candlestick.close
-        low = candlestick.low
-        high = candlestick.high
-
         self.__update_price_movement(candlestick)
-        self.__update_indicators(candlestick)
+        self.__update_indicators()
 
+    def add_indicator(self, tunit: str, indicator: Indicator) -> None:
+        self.__add_indicator(tunit, indicator)
+
+    def current_value(self, id_indicator) -> float:
+        pass
+
+    def history(self,id_indicator) -> np.ndarray:
+        pass
 
     def assign_to_timegroup(self, new_indicator: Indicator, id_tunit: str) -> None:
         """
@@ -294,10 +288,63 @@ class Environment:
 
         return tgroup
 
-    def __update_price_movement(self, candlestick: Candlestick):
-        id_tunit = candlestick.interval
-        self.__update_price_movement_by_tunit(id_tunit, candlestick)
+    def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
+        self.indicators_manager.add(tunit, indicator)
+
+    def __update_price_movement(self, candlestick: Candlestick) -> None:
+        tunit = candlestick.interval
+        ts = candlestick.close_time
+        close = candlestick.close
+        low = candlestick.low
+        high = candlestick.high
+        self.price_manager.put(tunit, ts, close, low, high)
+
+    def __update_indicators(self) -> None:
+        pass
 
     @staticmethod
     def create_identifier(id_tunit: str, indicator: Indicator) -> str:
         return f"{id_tunit}-{indicator.__str__()}"
+
+
+class PriceManager:
+
+    def __init__(self, nb_records: int) -> None:
+        self.__nb_records: int = nb_records
+        self._closes: Dict[str, TsQueue] = {}
+        self._highs: Dict[str, TsQueue] = {}
+        self._lows: Dict[str, TsQueue] = {}
+
+    def put(self, tunit: str, ts: int, close: float, low: float, high: float) -> None:
+        if not self.exist(tunit):
+            self._closes[tunit] = TsQueue(self.__nb_records)
+            self._highs[tunit] = TsQueue(self.__nb_records)
+            self.lows[tunit] = TsQueue(self.__nb_records)
+
+        self._closes[tunit].append(ts, close)
+        self._highs[tunit].append(ts,high)
+        self._lows[tunit].append(ts,low)
+
+    def exist(self, tunit: str) -> bool:
+        return tunit in self._closes.keys()
+
+class IndicatorManager:
+
+    def __init__(self, nb_records: int) -> None:
+        self.__nb_records: int = nb_records
+        self._indicators: Dict[str, ]
+
+    def add(self, tunit: str, indicator: Indicator) -> None:
+        #TODO implementer la gestion d'ajout d'indicateur en fonction de l'interval et leur id. il faut trouver une
+        # structure efficace qui permet de trouver rapidement l'indicateur en fonction de l'id et l'intervalle
+        # Idée 1. implementer un arbre "Composite" avec une fonction ajout 'add(indicator)'
+        # la fonction prends la propriété 'id' de l'indicateur est doit etre unique. elle est doit prendre cette forme
+        # tunit_nomIndicateur_param1#param2#param3
+        # La fonction utilise l'id de l'indicateur pour ajouter l'indicateur à la bonne branche de l'arbre. l'id est
+        # est un chemin dans l'arbre pour acceder à l'indicateur cibler
+        # r  __tunit1__indicatorA__paramX
+        #  \        \__indicatorB__paramX
+        #   \__tunit2__indicatorA__paramY
+        #
+        if tunit not in self._indicators.keys():
+            self._indicators
