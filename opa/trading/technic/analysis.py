@@ -11,12 +11,28 @@ import numpy as np
 
 class Indicator(ABC):
 
+    NAME: str = "BaseIndicator"
+
     def __init__(self):
         super().__init__()
 
     @abstractmethod
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         pass
+
+    def get_name(self) -> str:
+        return self.NAME
+
+    @abstractmethod
+    def get_parameters(self) -> str:
+        pass
+
+    def get_id(self) -> str:
+        return self.__str__()
+
+    def __str__(self) -> str:
+        return f"{self.get_name()}_{self.get_parameters()}"
+
 
 
 class SmaIndicator(Indicator):
@@ -31,9 +47,8 @@ class SmaIndicator(Indicator):
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         return talib.SMA(closes, timeperiod=self._period)
 
-
-    def __str__(self) -> str:
-        return f"{self.NAME}-{str(self._period)}"
+    def get_parameters(self) -> str:
+        return str(self._period)
 
 
 class RsiIndicator(Indicator):
@@ -48,9 +63,8 @@ class RsiIndicator(Indicator):
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         return talib.RSI(np.array(closes), timeperiod=self._period)
 
-    def __str__(self) -> str:
-        return f"{self.NAME}-{str(self._period)}"
-
+    def get_parameters(self) -> str:
+        return str(self._period)
 
 class StochasticIndicator(Indicator):
     NAME: str = "Stochastic"
@@ -90,8 +104,8 @@ class StochasticIndicator(Indicator):
                             self._slowd_period,
                             self._slowd_matype)
 
-    def __str__(self) -> str:
-        return f"{self.NAME}-{str(self._fastk_period)}-{str(self._slowk_period)}-{str(self._slowd_period)}"
+    def get_parameters(self) -> str:
+        return f"{str(self._fastk_period)}#{str(self._slowk_period)}#{str(self._slowd_period)}"
 
 
 class MACDIndicator(Indicator):
@@ -116,8 +130,8 @@ class MACDIndicator(Indicator):
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         return talib.MACD(closes, self._fastperiod, self._slowperiod, self._signalperiod)
 
-    def __str__(self) -> str:
-        return f"{self.NAME}-{str(self._fastperiod)}-{str(self._slowperiod)}-{str(self._signalperiod)}"
+    def get_parameters(self) -> str:
+        return f"{str(self._fastperiod)}#{str(self._slowperiod)}#{str(self._signalperiod)}"
 
 
 class ParabolicSARIndicator(Indicator):
@@ -134,8 +148,8 @@ class ParabolicSARIndicator(Indicator):
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         return talib.SAR(highs, lows, acceleration=0.02, maximum=0.2)
 
-    def __str__(self) -> str:
-        return f"{self.NAME}-{str(self._acceleration)}-{str(self._maximum)}"
+    def get_parameters(self) -> str:
+        return f"{str(self._acceleration)}#{str(self._maximum)}"
 
 
 class IndicatorSet:
@@ -332,7 +346,7 @@ class IndicatorManager:
 
     def __init__(self, nb_records: int) -> None:
         self.__nb_records: int = nb_records
-        self._indicators: Dict[str, ]
+        self._indicators: Dict[str, Dict[str,Dict[str,Indicator]]]
 
     def add(self, tunit: str, indicator: Indicator) -> None:
         #TODO implementer la gestion d'ajout d'indicateur en fonction de l'interval et leur id. il faut trouver une
@@ -346,5 +360,6 @@ class IndicatorManager:
         #  \        \__indicatorB__paramX
         #   \__tunit2__indicatorA__paramY
         #
+
         if tunit not in self._indicators.keys():
             self._indicators
