@@ -276,32 +276,6 @@ class Environment:
     def history(self,id_indicator) -> np.ndarray:
         pass
 
-    def assign_to_timegroup(self, new_indicator: Indicator, id_tunit: str) -> None:
-        """
-        Assigns a new indicator to a time group.
-        :param new_indicator: Indicator - An technical indicator
-        :param id_tunit: str - Time identifier like ['1h','5m', '1d']
-        :return: None
-        """
-        tgroup = self.get_timegroup(id_tunit)
-        id_indicator = self.create_identifier(id_tunit, new_indicator)
-        tgroup[id_indicator] = new_indicator
-
-
-    def get_timegroup(self, id_tunit: str) -> Dict[str, Indicator]:
-        """
-        Returns a time groupe according to identifier given in parameter.
-        :param id_tunit: str - Time identifier like ['1h','5m', '1d']
-        :return: Dict[str,Indicator] - An time group
-        """
-        tgroup = self._timegroup.get(id_tunit)
-
-        if not tgroup:
-            tgroup = {}
-            self._timegroup[id_tunit] = tgroup
-
-        return tgroup
-
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
         self.indicators_manager.add(tunit, indicator)
 
@@ -313,8 +287,10 @@ class Environment:
         high = candlestick.high
         self.price_manager.put(tunit, ts, close, low, high)
 
-    def __update_indicators(self) -> None:
-        pass
+    def __update_indicators(self, candlestick: Candlestick) -> None:
+        tunit = candlestick.interval
+
+        self.indicators_manager.update(self.price_manager)
 
     @staticmethod
     def create_identifier(id_tunit: str, indicator: Indicator) -> str:
@@ -339,6 +315,18 @@ class PriceManager:
         self._highs[tunit].append(ts,high)
         self._lows[tunit].append(ts,low)
 
+    def get_prices(self, tunit) -> Dict[str, np.ndarray]:
+        if self.exist(tunit):
+            prices= {
+                "close": self._closes[tunit].tolist(),
+                "highs": self._highs[tunit].tolist(),
+                "lows":  self._lows[tunit].tolist()
+            }
+        else :
+
+        return prices
+
+
     def exist(self, tunit: str) -> bool:
         return tunit in self._closes.keys()
 
@@ -362,4 +350,15 @@ class IndicatorManager:
         #
 
         if tunit not in self._indicators.keys():
-            self._indicators
+            self._indicators[tunit] = {}
+
+        indicator_name = indicator.get_name()
+
+        if indicator_name not in self._indicators[tunit].keys():
+            self._indicators[tunit][indicator_name] = {}
+
+        indicator_params = indicator.get_parameters()
+
+        if indicator_params not in self._indicators[tunit][indicator_name].keys():
+            self._indicators[tunit][indicator_name][indicator_params] = indicator
+
