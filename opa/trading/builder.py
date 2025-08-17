@@ -63,16 +63,17 @@ class Director:
         t_4h = "4h"
         t_1h = "1h"
         t_15m = "15m"
+        t_5m = "5m"
 
-        self._builder.set_checking_bullrun("5m", SmaIndicator(20), SmaIndicator(50), RsiIndicator(14))
-        self._builder.set_checking_retest_sma(t_4h, SmaIndicator(100))
+        self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m,20), SmaIndicator(t_5m,50), RsiIndicator(14))
+        self._builder.set_checking_retest_sma(t_4h, SmaIndicator(t_4h,100))
         self._builder.set_checking_lower_bollinger_band_breach(t_4h)
-        self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(20), SmaIndicator(50))
-        self._builder.set_checking_rsi_break_through_neutral_line(t_4h, RsiIndicator(14))
-        self._builder.set_checking_macd_bullish_crossover(t_4h, MACDIndicator(12,26,9))
-        self._builder.set_checking_oversold_stochastic(t_4h, StochasticIndicator(12,3,0,3,0))
-        self._builder.set_checking_oversold_stochastic(t_1h, StochasticIndicator(12, 3, 0, 3, 0))
-        self._builder.set_checking_oversold_stochastic(t_15m, StochasticIndicator(12, 3, 0, 3, 0))
+        self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(t_4h,20), SmaIndicator(t_4h,50))
+        self._builder.set_checking_rsi_break_through_neutral_line(t_4h, RsiIndicator(t_4h,14))
+        self._builder.set_checking_macd_bullish_crossover(t_4h, MACDIndicator(t_4h,12,26,9))
+        self._builder.set_checking_oversold_stochastic(t_4h, StochasticIndicator(t_4h,12,3,0,3,0))
+        self._builder.set_checking_oversold_stochastic(t_1h, StochasticIndicator(t_1h,12, 3, 0, 3, 0))
+        self._builder.set_checking_oversold_stochastic(t_15m, StochasticIndicator(t_15m,12, 3, 0, 3, 0))
 
 
 class IndicatorSetBuilder(Builder):
