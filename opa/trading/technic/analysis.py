@@ -13,8 +13,9 @@ class Indicator(ABC):
 
     NAME: str = "BaseIndicator"
 
-    def __init__(self):
+    def __init__(self, tunit):
         super().__init__()
+        self.__tunit=tunit
 
     @abstractmethod
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
@@ -22,6 +23,9 @@ class Indicator(ABC):
 
     def get_name(self) -> str:
         return self.NAME
+
+    def tunit(self) -> str:
+        return self.__tunit
 
     @abstractmethod
     def get_parameters(self) -> str:
@@ -31,15 +35,15 @@ class Indicator(ABC):
         return self.__str__()
 
     def __str__(self) -> str:
-        return f"{self.get_name()}_{self.get_parameters()}"
+        return f"{self.tunit()}_{self.get_name()}_{self.get_parameters()}"
 
 
 
 class SmaIndicator(Indicator):
     NAME: str = "SMA"
 
-    def __init__(self, period: int) -> None:
-        super().__init__()
+    def __init__(self, tunit: str, period: int) -> None:
+        Indicator.__init__(tunit)
         if period < 1:
             raise IllegalArgumentError(f"Period must be positive integer: {period}")
         self._period = period
@@ -54,10 +58,10 @@ class SmaIndicator(Indicator):
 class RsiIndicator(Indicator):
     NAME: str = "RSI"
 
-    def __init__(self, period: int) -> None:
+    def __init__(self, tunit: str,  period: int) -> None:
         if period < 1:
             raise IllegalArgumentError(f"Period must be positive integer: {period}")
-        super().__init__()
+        Indicator.__init__(tunit)
         self._period = period
 
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
@@ -70,6 +74,7 @@ class StochasticIndicator(Indicator):
     NAME: str = "Stochastic"
 
     def __init__(self,
+                 tunit: str,
                  fastk_period: int = 12,
                  slowk_period: int = 3,
                  slowk_matype: int = 0,
@@ -87,7 +92,7 @@ class StochasticIndicator(Indicator):
         if slowd_matype < 0:
             raise IllegalArgumentError(f"Period must be positive integer: {slowd_matype}")
 
-        super().__init__()
+        Indicator().__init__(tunit)
         self._fastk_period = fastk_period
         self._slowk_period = slowk_period
         self._slowk_matype = slowk_matype
@@ -112,6 +117,7 @@ class MACDIndicator(Indicator):
     NAME: str = "MACD"
 
     def __init__(self,
+                 tunit: str,
                  fastperiod: int = 12,
                  slowperiod: int = 26,
                  signalperiod: int = 9) -> None:
@@ -122,7 +128,7 @@ class MACDIndicator(Indicator):
         if signalperiod < 1:
             raise IllegalArgumentError(f"Period must be positive integer: {signalperiod}")
 
-        super().__init__()
+        Indicator.__init__(tunit)
         self._fastperiod: int = fastperiod
         self._slowperiod: int = slowperiod
         self._signalperiod: int = signalperiod
@@ -137,8 +143,8 @@ class MACDIndicator(Indicator):
 class ParabolicSARIndicator(Indicator):
     NAME: str = "SAR"
 
-    def __init__(self, acceleration: float, maximum: float) -> None:
-        super().__init__()
+    def __init__(self,tunit: str, acceleration: float, maximum: float) -> None:
+        Indicator().__init__(tunit)
         if (acceleration < 0) or (maximum < 0):
             raise ValueError()
 
@@ -219,6 +225,7 @@ class IndicatorSet:
         return indicator_history[-1]
 
     def get_close_value(self,):
+        pass
 
     def indicator_exist(self, indicator_id: str) -> bool:
         for tunit, indicators in self._indicators.items():
@@ -265,13 +272,12 @@ class Environment:
         :return:
         """
         self.__update_price_movement(candlestick)
-        self.__update_indicators()
 
     def add_indicator(self, tunit: str, indicator: Indicator) -> None:
         self.__add_indicator(tunit, indicator)
 
     def current_value(self, id_indicator) -> float:
-        pass
+        return self.indicators_manager.get_indicator_value(self.price_manager,id_indicator)
 
     def history(self,id_indicator) -> np.ndarray:
         pass
@@ -323,6 +329,7 @@ class PriceManager:
                 "lows":  self._lows[tunit].tolist()
             }
         else :
+            print('toto')
 
         return prices
 
@@ -362,3 +369,8 @@ class IndicatorManager:
         if indicator_params not in self._indicators[tunit][indicator_name].keys():
             self._indicators[tunit][indicator_name][indicator_params] = indicator
 
+    # def get_indicator_value(self, price_manager: PriceManager, id_indicator) -> None:
+    #     for
+    #     indicator = self._indicators[tunit][name][param]
+    #     tunit_price = price_manager.get_prices(tunit)
+    #     indicator.value(tunit_price['highs'], tunit_price['lows'], tunit_price['closes'])
