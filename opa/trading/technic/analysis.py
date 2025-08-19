@@ -276,8 +276,11 @@ class Environment:
     def add_indicator(self, tunit: str, indicator: Indicator) -> None:
         self.__add_indicator(tunit, indicator)
 
-    def current_value(self, id_indicator) -> float:
+    def current_indicator_value(self, id_indicator) -> float:
         return self.indicators_manager.get_indicator_value(self.price_manager,id_indicator)
+
+    def current_price_value(self,tunit) -> float:
+        return self.price_manager.get_prices(tunit)
 
     def history(self,id_indicator) -> np.ndarray:
         pass
@@ -329,8 +332,22 @@ class PriceManager:
                 "lows":  self._lows[tunit].tolist()
             }
         else :
-            print('toto')
+            prices = {
+                "close": ([],[]),
+                "highs": ([],[]),
+                "lows": ([],[])
+            }
 
+        return prices
+
+    def get_current_prices(self, tunit: str) -> Dict[str,float]:
+        prices = {}
+        if self.exist(tunit):
+            prices = {
+                "close": self._closes[tunit].last_value(),
+                "highs": self._highs[tunit].last_value(),
+                "lows": self._lows[tunit].last_value()
+            }
         return prices
 
 
@@ -369,8 +386,12 @@ class IndicatorManager:
         if indicator_params not in self._indicators[tunit][indicator_name].keys():
             self._indicators[tunit][indicator_name][indicator_params] = indicator
 
-    # def get_indicator_value(self, price_manager: PriceManager, id_indicator) -> None:
-    #     for
-    #     indicator = self._indicators[tunit][name][param]
-    #     tunit_price = price_manager.get_prices(tunit)
-    #     indicator.value(tunit_price['highs'], tunit_price['lows'], tunit_price['closes'])
+    def get_indicator_value(self, price_manager: PriceManager, id_indicator) -> None:
+         parameters=str.split(id_indicator,"_")
+         tunit=parameters[0]
+         name=parameters[1]
+         param=parameters[2]
+
+         indicator = self._indicators[tunit][name][param]
+         tunit_price = price_manager.get_prices(tunit)
+         indicator.value(tunit_price['highs'], tunit_price['lows'], tunit_price['closes'])

@@ -17,10 +17,11 @@ class TradingContext:
 
     def update(self, candlestick: Candlestick) -> None:
         self._environment.put(candlestick)
+        self.first_step()
         self.execute_step()
 
-    def indicator_history(self, id_indicator: str) -> np.ndarray:
-        return self._environment.history(id_indicator)
+    def indicator_value(self, id_indicator: str) -> float:
+        return self._environment.current_indicator_value(id_indicator)
 
     def first_step(self) -> None:
         self.transition_to(self._initial_step)
