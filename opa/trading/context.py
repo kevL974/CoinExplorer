@@ -23,6 +23,9 @@ class TradingContext:
     def indicator_value(self, id_indicator: str) -> float:
         return self._environment.current_indicator_value(id_indicator)
 
+    def price_value(self, tunit: str) -> str:
+        return self._environment.current_price_value(tunit)
+
     def first_step(self) -> None:
         self.transition_to(self._initial_step)
 
