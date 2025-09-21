@@ -23,6 +23,21 @@ Cette instruction va démarrer un ensemble de services :
 - Un service `dashboard`, qui est une application Dash pour visualiser les données de Hbase en passant par le service api.
 
 
+Pour demarrer des services ciblés :
+
+`docker compose up -d collect_sd kafka kafkaui` 
+
+Cette instruction démarre uniquement le service `collect_sd`, `kafka` et `kafkaui` 
+
+Pour lister les services démarrés :
+
+`docker container list -a`
+
+Pour afficher les logs d'un service :
+
+`docker logs <service_cible>
+
+
 ### III. Architecture
 
 ![image](docs/image/Architecture.png)
