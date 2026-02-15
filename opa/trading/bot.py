@@ -1,4 +1,4 @@
-from opa.trading.builder import Director, IndicatorSetBuilder, TradingStepBuilder
+from opa.trading.builder import Director, EnvironmentSetBuilder, TradingStepBuilder
 from opa.trading.strategy import *
 from opa.trading.technic.analysis import *
 from opa.core.candlestick import Candlestick
@@ -67,11 +67,10 @@ if __name__ == "__main__":
     director.make_day_trading_strategy()
     steps = director.builder.product
 
-    director.builder = IndicatorSetBuilder()
+    director.builder = EnvironmentSetBuilder()
     director.make_day_trading_strategy()
-    indicators = director.builder.product
-    context = TradingContext(steps, indicators)
+    environment = director.builder.product
 
-    bot = TradingBot(DayTradingStrategy(context))
+    bot = TradingBot(DayTradingStrategy(steps, environment))
     loop = asyncio.get_event_loop()
     loop.run_until_complete(trade(consumers=kafka_consumers, bot=bot))

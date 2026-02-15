@@ -76,7 +76,7 @@ class Director:
         self._builder.set_checking_oversold_stochastic(t_15m, StochasticIndicator(t_15m,12, 3, 0, 3, 0))
 
 
-class IndicatorSetBuilder(Builder):
+class EnvironmentSetBuilder(Builder):
 
     def __init__(self) -> None:
         super().__init__()

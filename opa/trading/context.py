@@ -5,7 +5,7 @@ from opa.core.candlestick import Candlestick
 from opa.trading.technic.analysis import Environment
 
 
-class TradingContext:
+class TradingStrategy:
 
     _step: step.TradingStep = None
     _initial_step: step.TradingStep = None

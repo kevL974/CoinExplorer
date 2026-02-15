@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from os import MFD_ALLOW_SEALING
 
-from opa.trading.context import TradingContext
+from opa.trading.context import TradingStrategy
 from opa.trading.technic.analysis import *
 
 
 class TradingStep(ABC):
 
     def __init__(self):
-        self._context: TradingContext = None
+        self._context: TradingStrategy = None
         self._next_step: TradingStep = None
 
     @property
-    def context(self) -> TradingContext:
+    def context(self) -> TradingStrategy:
         return self._context
 
     @context.setter
