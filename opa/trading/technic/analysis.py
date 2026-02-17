@@ -320,9 +320,9 @@ class PriceManager:
             self._highs[tunit] = TsQueue(self.__nb_records)
             self.lows[tunit] = TsQueue(self.__nb_records)
 
-        self._closes[tunit].append(ts, close)
-        self._highs[tunit].append(ts,high)
-        self._lows[tunit].append(ts,low)
+        self._closes[tunit].push(ts, close)
+        self._highs[tunit].push(ts,high)
+        self._lows[tunit].push(ts,low)
 
     def get_prices(self, tunit) -> Dict[str, np.ndarray]:
         if self.exist(tunit):
@@ -344,9 +344,9 @@ class PriceManager:
         prices = {}
         if self.exist(tunit):
             prices = {
-                "close": self._closes[tunit].last_value(),
-                "highs": self._highs[tunit].last_value(),
-                "lows": self._lows[tunit].last_value()
+                "close": self._closes[tunit].earliest_value(),
+                "highs": self._highs[tunit].earliest_value(),
+                "lows": self._lows[tunit].earliest_value()
             }
         return prices
 
@@ -358,7 +358,7 @@ class IndicatorManager:
 
     def __init__(self, nb_records: int) -> None:
         self.__nb_records: int = nb_records
-        self._indicators: Dict[str, Dict[str,Dict[str,Indicator]]]
+        self._indicators: Dict[str, Dict[str,Dict[str,Indicator]]] = None
 
     def add(self, tunit: str, indicator: Indicator) -> None:
         #TODO implementer la gestion d'ajout d'indicateur en fonction de l'interval et leur id. il faut trouver une
