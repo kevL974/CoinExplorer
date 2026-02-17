@@ -1,3 +1,5 @@
+import numpy as np
+
 from opa.utils import *
 from datetime import datetime
 import pytest
@@ -82,6 +84,7 @@ def test_tsqueue_tolist():
 
     result=np.array([[pd.to_datetime(ts_0), value_0], [pd.to_datetime(ts_1), value_1]])
 
+    f""" tsQueue.tolist() {tsQueue.tolist().__str__()} must be equals to result {result}"""
     assert np.array_equal(tsQueue.tolist(), result) == True
 
 def test_tsqueue_earliest_entry():
@@ -90,8 +93,13 @@ def test_tsqueue_earliest_entry():
     value = 12
     tsQueue.push(ts, value)
 
-    result = np.array([[pd.to_datetime(ts), value]]);
+    earliest_ts = ts + 200
+    earliest_value = 21
+    tsQueue.push(earliest_ts, earliest_value)
 
+    result = np.array([pd.to_datetime(earliest_ts), earliest_value])
+
+    f""" tsQueue.tolist() {tsQueue.earliest_entry().__str__()} must be equals to result {result}"""
     assert np.array_equal(tsQueue.earliest_entry(), result) == True
 
 def test_tsqueue_earliest_value():
@@ -100,10 +108,11 @@ def test_tsqueue_earliest_value():
     value = 12
     tsQueue.push(ts, value)
 
-    earliest_ts = datetime.now().timestamp()
+    earliest_ts = ts+200
     earliest_value = 21
     tsQueue.push(earliest_ts, earliest_value)
 
+    f""" tsQueue.tolist() {tsQueue.earliest_value().__str__()} must be equals to result {earliest_value}"""
     assert tsQueue.earliest_value() == earliest_value
 
 def test_tsqueue_earliest_date():
@@ -112,9 +121,23 @@ def test_tsqueue_earliest_date():
     value = 12
     tsQueue.push(ts, value)
 
-    earliest_ts = datetime.now().timestamp()
+    earliest_ts = ts+200
     earliest_value = 21
     tsQueue.push(earliest_ts, earliest_value)
 
+    f""" tsQueue.tolist() {tsQueue.earliest_date().__str__()} must be equals to result {earliest_ts}"""
     assert tsQueue.earliest_date() == pd.to_datetime(earliest_ts)
 
+def test_tsqueue_earliest_n_entry():
+    tsQueue = TsQueue(15)
+    ts_serie = [datetime.now().timestamp() + i for i in range(18)]
+    value_serie = [i for i in range(18)]
+    ts_values = zip(ts_serie, value_serie)
+
+    for ts, value in ts_values:
+        tsQueue.push(ts, value)
+
+    result = np.array([[pd.to_datetime(ts_serie[15]), value_serie[15]],[pd.to_datetime(ts_serie[16]), value_serie[16]],[pd.to_datetime(ts_serie[17]), value_serie[17]]])
+
+    f""" tsQueue.tolist() {tsQueue.get_n_earliest_entry(3).__str__()} must be equals to result {result}"""
+    assert np.array_equal(tsQueue.get_n_earliest_entry(3), result) == True

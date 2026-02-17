@@ -11,7 +11,6 @@ from thriftpy2.transport.base import TTransportException
 from aiofiles.os import listdir
 from aiofiles.ospath import isdir
 from aiofiles import open as aio_open
-from collections import deque
 import aiocsv
 
 
@@ -212,21 +211,30 @@ class TsQueue:
         return self._timeseries.reset_index().to_numpy()
 
     def values(self) -> np.ndarray:
+        """
+        Returns values of timeseries.
+        :return: an Numpy array
+        """
         return self.tolist()[0]
 
     def timestamps(self) -> np.ndarray:
+        """
+        Returns timestamps of timeseries.
+        :return: an Numpy array
+        """
         return self.tolist()[1]
 
     def earliest_value(self) -> float:
-        return self.tolist()[0][1]
+        return self.tolist()[-1][1]
 
     def earliest_date(self) -> int:
-        return self.tolist()[0][0]
+        return self.tolist()[-1][0]
 
     def earliest_entry(self) -> np.ndarray:
-        print(self._timeseries.reset_index().iloc[0].to_numpy())
-        df = self._timeseries.reset_index()
-        return df.iloc[[0]].to_numpy()
+        return self.tolist()[-1]
 
     def size(self):
         return len(self._timeseries.index)
+
+    def get_n_earliest_entry(self, n: int) -> np.ndarray:
+        return self._timeseries.iloc[-n:].reset_index().to_numpy()
