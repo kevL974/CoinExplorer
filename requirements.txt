@@ -4,6 +4,7 @@ kafka-python
 pytest
 tqdm
 pandas
+numpy
 aiohttp
 aiofiles
 aiocsv

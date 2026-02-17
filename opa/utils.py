@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Callable
 
 import numpy as np
-
+import pandas as pd
 from opa.harvest.ochlv_constant import *
 from opa.core.candlestick import Candlestick
 from zipfile import BadZipfile
@@ -188,35 +188,45 @@ class TsQueue:
 
     def __init__(self, maxlen: int = 10) -> None:
         self._maxlen = maxlen
-        self._timestamp_qe = deque(maxlen=self._maxlen)
-        self._values_qe = deque(maxlen=self._maxlen)
+        self._timeseries: pd.DataFrame = pd.DataFrame(columns=["value"])
+        self._timeseries.index.name="timestamp"
 
-    def append(self, ts: int, value: float) -> None:
-        self._timestamp_qe.append(ts)
-        self._values_qe.append(value)
+    def push(self, timestamp: float, value: float) -> None:
+        """
+        Adds a new timeserie value and checks if the size of the queue is exceeded,
+        if yes then the function deletes the elements at the index above maxlen
+        :param timestamp: an integer
+        :param value: a float
+        :return: None
+        """
+        self._timeseries.loc[pd.to_datetime(timestamp)]=value
 
-    def tolist(self) -> Tuple:
-        return self._timestamp_qe, self._values_qe
+        if self.size() > self._maxlen:
+            self._timeseries = self._timeseries.iloc[:200]
+
+    def tolist(self) -> np.ndarray:
+        """
+        Returns a Numpy representation of TsQueue
+        :return: an Numpy array
+        """
+        return self._timeseries.reset_index().to_numpy()
 
     def values(self) -> np.ndarray:
-        return np.array(self._values_qe)
+        return self.tolist()[0]
 
     def timestamps(self) -> np.ndarray:
-        return np.array(self._timestamp_qe)
+        return self.tolist()[1]
 
-    def last_value(self) -> float:
-        try:
-            return self._values_qe[-1]
-        except IndexError:
-            return np.nan
+    def earliest_value(self) -> float:
+        return self.tolist()[0][1]
 
-    def last_date(self) -> int:
-        try:
-            return self._timestamp_qe[-1]
-        except IndexError:
-            return np.nan
+    def earliest_date(self) -> int:
+        return self.tolist()[0][0]
 
-    def last_entry(self) -> Tuple[int,float]:
-        return self.last_date(), self.last_value()
+    def earliest_entry(self) -> np.ndarray:
+        print(self._timeseries.reset_index().iloc[0].to_numpy())
+        df = self._timeseries.reset_index()
+        return df.iloc[[0]].to_numpy()
 
-
+    def size(self):
+        return len(self._timeseries.index)

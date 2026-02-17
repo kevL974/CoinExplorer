@@ -1,5 +1,5 @@
 from opa.utils import *
-from opa.core.candlestick import Candlestick
+from datetime import datetime
 import pytest
 import os
 
@@ -53,3 +53,68 @@ async def test_csv_to_candlesticks():
     assert first_candlestick.close_time == first_line_close_time
 
     os.remove(file_path)
+
+def test_tsqueue_push():
+    tsQueue = TsQueue(200)
+    ts = datetime.now().timestamp()
+    value = 12
+    tsQueue.push(ts, value)
+
+    f""" size must be equals to 1 after push """
+    assert tsQueue.size() == 1
+
+    ts_values = zip([i for i in range(201)],[datetime.now().timestamp()+i for i in range(201)])
+
+    for x in ts_values:
+        tsQueue.push(x[0],x[1])
+
+    f""" size must be equals to 200 after 201 push """
+    assert tsQueue.size() == 200
+
+def test_tsqueue_tolist():
+    tsQueue = TsQueue(200)
+    ts_0 = datetime.now().timestamp()
+    value_0 = 12
+    ts_1 = ts_0 + 200
+    value_1 = 21
+    tsQueue.push(ts_0, value_0)
+    tsQueue.push(ts_1, value_1)
+
+    result=np.array([[pd.to_datetime(ts_0), value_0], [pd.to_datetime(ts_1), value_1]])
+
+    assert np.array_equal(tsQueue.tolist(), result) == True
+
+def test_tsqueue_earliest_entry():
+    tsQueue = TsQueue(200)
+    ts = datetime.now().timestamp()
+    value = 12
+    tsQueue.push(ts, value)
+
+    result = np.array([[pd.to_datetime(ts), value]]);
+
+    assert np.array_equal(tsQueue.earliest_entry(), result) == True
+
+def test_tsqueue_earliest_value():
+    tsQueue = TsQueue(200)
+    ts = datetime.now().timestamp()
+    value = 12
+    tsQueue.push(ts, value)
+
+    earliest_ts = datetime.now().timestamp()
+    earliest_value = 21
+    tsQueue.push(earliest_ts, earliest_value)
+
+    assert tsQueue.earliest_value() == earliest_value
+
+def test_tsqueue_earliest_date():
+    tsQueue = TsQueue(200)
+    ts = datetime.now().timestamp()
+    value = 12
+    tsQueue.push(ts, value)
+
+    earliest_ts = datetime.now().timestamp()
+    earliest_value = 21
+    tsQueue.push(earliest_ts, earliest_value)
+
+    assert tsQueue.earliest_date() == pd.to_datetime(earliest_ts)
+
