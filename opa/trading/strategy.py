@@ -1,17 +1,19 @@
+from __future__ import annotations
+from abc import ABC, ABCMeta, abstractmethod
 from opa.trading.step import *
 
 
-class TradingStrategy:
+class TradingStrategy(ABC):
 
     def __init__(self, step: TradingStep, environment: Environment):
         self._environment: Environment = environment
         self._initial_step: TradingStep = step
 
     def on_receiving_candlestick(self, candlestick: Candlestick) -> None:
-        self._environment.update(candlestick)
+        self._environment.put(candlestick)
 
     @abstractmethod
-    def indicator_value(self, id_indicator: str) -> float:
+    def indicator_value(self, id_indicator: str) -> np.ndarray:
         pass
 
     @abstractmethod
