@@ -158,106 +158,6 @@ class ParabolicSARIndicator(Indicator):
         return f"{str(self._acceleration)}#{str(self._maximum)}"
 
 
-class IndicatorSet:
-    __MAXSIZE: int = 200
-
-    def __init__(self):
-        self._indicators: Dict[str, Dict[str, Indicator]] = {}
-        self._indicator_ts: Dict[str, np.ndarray] = {}
-        self._closes: Dict[str, TsQueue] = {}
-        self._highs: Dict[str, TsQueue] = {}
-        self._lows: Dict[str, TsQueue] = {}
-        self.__configure_queues()
-        self._authorized_tunit=[]
-
-    def add(self, tunit, indicator: Indicator):
-        self.__add_tunit_filter(tunit)
-        self.__add_price_history(tunit)
-        self.__add_indicator(tunit, indicator)
-
-    def __configure_queues(self) -> None:
-        pass
-
-    def __add_tunit_filter(self, tunit: str) -> None:
-        if tunit not in INTERVALS:
-            raise IllegalArgumentError(f"Time unit {tunit} is not permitted")
-
-        self._authorized_tunit.append(tunit)
-
-    def __add_price_history(self, tunit: str) -> None:
-        if tunit not in self._closes.keys():
-            self._closes[tunit] = TsQueue(maxlen=Environment.__MAXSIZE)
-
-        if tunit not in self._lows.keys():
-            self._lows[tunit] = TsQueue(maxlen=Environment.__MAXSIZE)
-
-        if tunit not in self._highs.keys():
-            self._highs[tunit] = TsQueue(maxlen=Environment.__MAXSIZE)
-
-    def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
-        indicator_id = self.create_id(tunit, indicator)
-
-        if tunit not in self._indicators.keys():
-            self._indicators[tunit] = {}
-
-        if not self.indicator_exist(indicator_id):
-            self._indicators[tunit][indicator_id] = indicator
-            self._indicator_ts[indicator_id] = np.array([np.nan] for x in range(0, Environment.__MAXSIZE, 1))
-
-    def __update_indicators(self, tunit: str) -> None:
-        np_highs = self._highs[tunit].values()
-        np_lows = self._lows[tunit].values()
-        np_closes = self._closes[tunit].values()
-
-        for id, indicator in self._indicators[tunit].items():
-            self._indicator_ts[id] = indicator.value(np_highs, np_lows, np_closes)
-
-    def get_indicator_history(self, indicator_id: str) -> np.ndarray:
-        if not self.indicator_exist(indicator_id):
-            raise KeyError(f"Indicator {indicator_id} does not exist")
-
-        return self._indicator_ts[indicator_id]
-
-
-    def get_indicator_value(self, indicator_id: str) -> float:
-        indicator_history = self.get_indicator_history(indicator_id)
-
-        return indicator_history[-1]
-
-    def get_close_value(self,):
-        pass
-
-    def indicator_exist(self, indicator_id: str) -> bool:
-        for tunit, indicators in self._indicators.items():
-            if indicator_id in indicators.keys():
-                return True
-
-        return False
-
-    def is_authorized(self, tunit: str) -> bool:
-        return tunit in self._authorized_tunit
-
-    def receive_new_candlestick(self, candlestick: Candlestick) -> None:
-        tunit = candlestick.interval
-        ts = candlestick.close_time
-        close = candlestick.close
-        low = candlestick.low
-        high = candlestick.high
-
-        if self.is_authorized(tunit):
-            self._closes[tunit].append(ts,close)
-            self._lows[tunit].append(ts, low)
-            self._highs[tunit].append(ts, high)
-            self.__update_indicators(tunit)
-
-    @staticmethod
-    def create_id(tunit: str, indicator: Indicator) -> str:
-        return f"{tunit}-{indicator.__str__()}"
-
-    @staticmethod
-    def get_tunit_from_id(id_indicator: str) -> str:
-        return str.split(id_indicator,"-")[0]
-
 class Environment:
     __MAXSIZE: int = 200
 
@@ -276,14 +176,14 @@ class Environment:
     def add_indicator(self, tunit: str, indicator: Indicator) -> None:
         self.__add_indicator(tunit, indicator)
 
-    def current_indicator_value(self, id_indicator) -> float:
-        return self.indicators_manager.get_indicator_value(self.price_manager,id_indicator)
+    def indicator_value(self, id_indicator: str) -> np.ndarray:
+        return self.indicators_manager.indicator_value(self.price_manager, id_indicator)
 
-    def current_price_value(self,tunit) -> float:
-        return self.price_manager.get_prices(tunit)
+    def price_value(self, tunit: str) -> Dict[str, float]:
+        return self.price_manager.earliest_price(tunit)
 
-    def history(self,id_indicator) -> np.ndarray:
-        pass
+    def price_history(self, tunit: str) -> Dict[str, np.ndarray]:
+        return self.price_manager.history(tunit)
 
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
         self.indicators_manager.add(tunit, indicator)
@@ -295,11 +195,6 @@ class Environment:
         low = candlestick.low
         high = candlestick.high
         self.price_manager.put(tunit, ts, close, low, high)
-
-    def __update_indicators(self, candlestick: Candlestick) -> None:
-        tunit = candlestick.interval
-
-        self.indicators_manager.update(self.price_manager)
 
     @staticmethod
     def create_identifier(id_tunit: str, indicator: Indicator) -> str:
@@ -324,7 +219,7 @@ class PriceManager:
         self._highs[tunit].push(ts,high)
         self._lows[tunit].push(ts,low)
 
-    def get_prices(self, tunit) -> Dict[str, np.ndarray]:
+    def history(self, tunit) -> Dict[str, np.ndarray]:
         if self.exist(tunit):
             prices= {
                 "close": self._closes[tunit].tolist(),
@@ -340,7 +235,7 @@ class PriceManager:
 
         return prices
 
-    def get_current_prices(self, tunit: str) -> Dict[str,float]:
+    def earliest_price(self, tunit: str) -> Dict[str,float]:
         prices = {}
         if self.exist(tunit):
             prices = {
@@ -386,12 +281,12 @@ class IndicatorManager:
         if indicator_params not in self._indicators[tunit][indicator_name].keys():
             self._indicators[tunit][indicator_name][indicator_params] = indicator
 
-    def get_indicator_value(self, price_manager: PriceManager, id_indicator) -> None:
-         parameters=str.split(id_indicator,"_")
-         tunit=parameters[0]
-         name=parameters[1]
-         param=parameters[2]
+    def indicator_value(self, price_manager: PriceManager, id_indicator) -> np.ndarray:
+        parameters=str.split(id_indicator,"_")
+        tunit=parameters[0]
+        name=parameters[1]
+        param=parameters[2]
 
-         indicator = self._indicators[tunit][name][param]
-         tunit_price = price_manager.get_prices(tunit)
-         indicator.value(tunit_price['highs'], tunit_price['lows'], tunit_price['closes'])
+        indicator = self._indicators[tunit][name][param]
+        tunit_price = price_manager.history(tunit)
+        return indicator.value(tunit_price['highs'], tunit_price['lows'], tunit_price['closes'])
