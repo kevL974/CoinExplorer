@@ -7,12 +7,32 @@ class TradingStrategy:
         self._environment: Environment = environment
         self._initial_step: TradingStep = step
 
-    @property
-    def context(self):
-        return self._context
-
     def on_receiving_candlestick(self, candlestick: Candlestick) -> None:
         self._environment.update(candlestick)
+
+    @abstractmethod
+    def indicator_value(self, id_indicator: str) -> float:
+        pass
+
+    @abstractmethod
+    def price_value(self, tunit: str) -> Dict[str, np.ndarray]:
+        pass
+
+    @abstractmethod
+    def price_history(self, tunit: str) -> Dict[str, np.ndarray]:
+        pass
+
+    @abstractmethod
+    def first_step(self) -> None:
+        pass
+
+    @abstractmethod
+    def transition_to(self, step: TradingStep) -> None:
+        pass
+
+    @abstractmethod
+    def execute_step(self):
+        pass
 
 
 class DayTradingStrategy(TradingStrategy):
@@ -27,11 +47,14 @@ class DayTradingStrategy(TradingStrategy):
         self.first_step()
         self.execute_step()
 
-    def indicator_value(self, id_indicator: str) -> float:
-        return self._environment.current_indicator_value(id_indicator)
+    def indicator_value(self, id_indicator: str) -> np.ndarray:
+        return self._environment.indicator_value(id_indicator)
 
-    def price_value(self, tunit: str) -> float:
-        return self._environment.current_price_value(tunit)
+    def price_value(self, tunit: str) -> Dict[str, float]:
+        return self._environment.price_value(tunit)
+
+    def price_history(self, tunit: str) -> Dict[str, np.ndarray]:
+        return self._environment.price_history(tunit)
 
     def first_step(self) -> None:
         self.transition_to(self._initial_step)
