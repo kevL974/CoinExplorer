@@ -128,14 +128,14 @@ class TradingStepBuilder(Builder):
         self.reset()
 
     def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
-        id_sma_short = Environment.create_id(tunit, sma_short)
-        id_sma_long = Environment.create_id(tunit, sma_long)
-        id_rsi = Environment.create_id(tunit, rsi)
+        id_sma_short = Environment.create_identifier(tunit, sma_short)
+        id_sma_long = Environment.create_identifier(tunit, sma_long)
+        id_rsi = Environment.create_identifier(tunit, rsi)
         self._current_step.next = CheckBullRunStep(id_sma_short, id_sma_long, id_rsi)
         self._current_step = self._current_step.next
 
     def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
-        id_sma = Environment.create_id(tunit, sma)
+        id_sma = Environment.create_identifier(tunit, sma)
         self._current_step.next = RetestSmaStep(id_sma)
         self._current_step = self._current_step.next
 
