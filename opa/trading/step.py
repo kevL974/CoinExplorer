@@ -1,9 +1,7 @@
 from __future__ import annotations
-
-from os import MFD_ALLOW_SEALING
-
-from opa.trading.context import TradingStrategy
+from opa.trading.strategy import TradingStrategy
 from opa.trading.technic.analysis import *
+from typing import Tuple
 
 
 class TradingStep(ABC):
@@ -105,68 +103,53 @@ class RetestSmaStep(TradingStep):
 
     def check_condition(self) -> None:
         try :
-            price = self.context.indicator_value()
             sma = self.context.indicator_value(self._id_sma)
+            tunit = str.split(self._id_sma,"_")[0]
+            price = self.context.price_history(tunit)
+            price_close = price["close"]
+
+            rebounds = self.detect_rebound(price_close,sma)[0]
+
+            if rebounds.size == 0:
+                self.on_fail()
+
+            else :
+                self.on_success()
+
         except ValueError:
             print(f"ReTestSmaStep - No price or sma value available")
             self.on_wait()
 
-        if self._state == self.INIT:
-            self._state = self.START
+    def detect_rebound(self, price: np.ndarray, sma: np.ndarray, tolerance: float = 0.002) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Detects whether the price bounces off the 100-period SMA.
 
-        elif self._state == self.START:
-            if self.sma_converes_to_price(sma, price) and self.is_sma_above(sma, price):
-                self._state = self.SMA_ABOVE_CONVERGENT
-            elif self.sma_converes_to_price(sma, price) and not self.is_sma_above(sma, price):
-                self._state = self.SMA_BELOW_CONVERGENT
-            else:
-                self._state = self.FAIL
+        price : np.ndarray of price values (close)
+        sma   : np.ndarray of the 100-period SMA
+        tolerance : relative margin (0.002 = 0.2%) used to consider a "contact"
 
-        elif self._state == self.SMA_ABOVE_CONVERGENT:
-            if not self.is_sma_above(sma, price):
-                self._state = self.SMA_ABOVE_WAITING_DIVERGENCE
-                self._d+=1
+        Returns:
+            - indices where a rebound is detected
+        - a boolean array indicating rebound or not
+        """
+        price = np.asarray(price)
+        sma = np.asarray(sma)
 
-        elif self._state == self.SMA_BELOW_WAITING_DIVERGENCE:
-            if self.is_sma_above(sma, price) and self._d < 5:
-                self._state = self.SUCCESS
-            elif not self.is_sma_above(sma, price) and self._d < 5:
-                self._d+=1
-            else:
-                self._state = self.FAIL
+        # 1. Proximité prix / SMA (contact)
+        relative_diff = np.abs(price - sma) / sma
+        contact = relative_diff < tolerance
 
-        elif self._state == self.SMA_BELOW_CONVERGENT:
-            if self.is_sma_above(sma, price):
-                self._state = self.SMA_BELOW_WAITING_DIVERGENCE
+        # 2. Rebond : prix remonte après contact
+        rebound = np.zeros_like(price, dtype=bool)
 
-        elif self._state == self.SMA_BELOW_WAITING_DIVERGENCE:
-            if not self.is_sma_above(sma, price)  and self._d < 5:
-                self._state = self.SUCCESS
-            elif self.is_sma_above(sma, price) and self._d < 5:
-                self._d+=1
-            else:
-                self._state = self.FAIL
+        for i in range(1, len(price) - 1):
+            if contact[i]:
+                # prix avant > prix au contact < prix après  → forme de "V"
+                if price[i] < price[i - 1] and price[i] < price[i + 1]:
+                    rebound[i] = True
 
-        self._last_sma = sma
-        self._last_price = price
-
-        if self._state == self.FAIL:
-            self.on_fail()
-        elif self._state == self.SUCCESS:
-            self.on_success()
-        else:
-            self.on_wait()
-
-    def is_sma_above(self, sma: float, price: float) -> bool:
-        return sma > price
-
-    def diff(self, sma: float, price: float) -> float:
-        if self.is_sma_above(sma, price):
-            return sma - price
-        return price - sma
-
-    def sma_converes_to_price(self, current_sma: float, current_price: float) -> bool:
-        return (self.diff(self._last_sma, self._last_price) - self.diff(current_sma, current_price)) > 0
+        indices = np.where(rebound)[0]
+        return indices, rebound
 
     def on_wait(self) -> None:
         self.context.transition_to(self)
