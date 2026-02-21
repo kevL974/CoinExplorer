@@ -65,7 +65,7 @@ class Director:
         t_15m = "15m"
         t_5m = "5m"
 
-        self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m,20), SmaIndicator(t_5m,50), RsiIndicator(14))
+        self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m,20), SmaIndicator(t_5m,50), RsiIndicator(t_5m, 14))
         self._builder.set_checking_retest_sma(t_4h, SmaIndicator(t_4h,100))
         self._builder.set_checking_lower_bollinger_band_breach(t_4h)
         self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(t_4h,20), SmaIndicator(t_4h,50))
@@ -89,7 +89,7 @@ class EnvironmentSetBuilder(Builder):
         self._product.add_indicator(tunit, rsi)
 
     def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
-        pass
+        self._product.add_indicator(tunit, sma)
 
     def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
         pass
