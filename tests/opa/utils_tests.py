@@ -141,3 +141,18 @@ def test_tsqueue_earliest_n_entry():
 
     f""" tsQueue.tolist() {tsQueue.get_n_earliest_entry(3).__str__()} must be equals to result {result}"""
     assert np.array_equal(tsQueue.get_n_earliest_entry(3), result) == True
+
+def test_tsqueue_values():
+    tsQueue = TsQueue(20)
+    values = 30000 + np.cumsum(np.random.normal(2, 10, 20))
+    dates = pd.date_range(start="2024-01-01", periods=20, freq="4h").to_numpy()
+
+    ts_values = zip(dates, values)
+
+    for ts, value in ts_values:
+        tsQueue.push(ts, value)
+
+    expected = values
+
+    f"""TsQueue.values() must be equals to expected {expected}"""
+    assert np.array_equal(tsQueue.values(), expected) == True

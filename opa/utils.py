@@ -215,23 +215,23 @@ class TsQueue:
         Returns values of timeseries.
         :return: an Numpy array
         """
-        return self.tolist()[0]
+        return self._timeseries.to_numpy().ravel()
 
     def timestamps(self) -> np.ndarray:
         """
         Returns timestamps of timeseries.
         :return: an Numpy array
         """
-        return self.tolist()[1]
+        return self._timeseries.reset_index().iloc[:,0].to_numpy().ravel()
 
     def earliest_value(self) -> float:
-        return self.tolist()[-1][1]
+        return self._timeseries.iloc[-1,0]
 
     def earliest_date(self) -> int:
-        return self.tolist()[-1][0]
+        return self._timeseries.reset_index().iloc[-1,0]
 
     def earliest_entry(self) -> np.ndarray:
-        return self.tolist()[-1]
+        return self._timeseries.reset_index().iloc[-1]
 
     def size(self):
         return len(self._timeseries.index)
