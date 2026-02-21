@@ -1,12 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
-
+from typing import Dict
 from kafka.errors import IllegalArgumentError
-import talib
+
+from opa.AppException import UnavailablePriceData, UnavailableIndicatorData
 from opa.utils import TsQueue
 from opa.core.candlestick import Candlestick
-from opa.util.binance.enums import *
+import talib
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
+
+
 
 
 class Indicator(ABC):
@@ -43,7 +47,7 @@ class SmaIndicator(Indicator):
     NAME: str = "SMA"
 
     def __init__(self, tunit: str, period: int) -> None:
-        Indicator.__init__(tunit)
+        super().__init__(tunit)
         if period < 1:
             raise IllegalArgumentError(f"Period must be positive integer: {period}")
         self._period = period
@@ -61,7 +65,7 @@ class RsiIndicator(Indicator):
     def __init__(self, tunit: str,  period: int) -> None:
         if period < 1:
             raise IllegalArgumentError(f"Period must be positive integer: {period}")
-        Indicator.__init__(tunit)
+        super().__init__(tunit)
         self._period = period
 
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
@@ -92,7 +96,7 @@ class StochasticIndicator(Indicator):
         if slowd_matype < 0:
             raise IllegalArgumentError(f"Period must be positive integer: {slowd_matype}")
 
-        Indicator().__init__(tunit)
+        super().__init__(tunit)
         self._fastk_period = fastk_period
         self._slowk_period = slowk_period
         self._slowk_matype = slowk_matype
@@ -128,7 +132,7 @@ class MACDIndicator(Indicator):
         if signalperiod < 1:
             raise IllegalArgumentError(f"Period must be positive integer: {signalperiod}")
 
-        Indicator.__init__(tunit)
+        super().__init__(tunit)
         self._fastperiod: int = fastperiod
         self._slowperiod: int = slowperiod
         self._signalperiod: int = signalperiod
@@ -144,7 +148,7 @@ class ParabolicSARIndicator(Indicator):
     NAME: str = "SAR"
 
     def __init__(self,tunit: str, acceleration: float, maximum: float) -> None:
-        Indicator().__init__(tunit)
+        super().__init__(tunit)
         if (acceleration < 0) or (maximum < 0):
             raise ValueError()
 
@@ -177,13 +181,25 @@ class Environment:
         self.__add_indicator(tunit, indicator)
 
     def indicator_value(self, id_indicator: str) -> np.ndarray:
-        return self.indicators_manager.indicator_value(self.price_manager, id_indicator)
+        try:
+            indicator_value = self.indicators_manager.indicator_value(self.price_manager, id_indicator)
+        except UnavailablePriceData as e:
+            raise UnavailableIndicatorData from e
+        else:
+            return indicator_value
 
     def price_value(self, tunit: str) -> Dict[str, float]:
         return self.price_manager.earliest_price(tunit)
 
     def price_history(self, tunit: str) -> Dict[str, np.ndarray]:
-        return self.price_manager.history(tunit)
+        try:
+            history = self.price_manager.history(tunit)
+        except KeyError as e:
+            msg = f"Unavailable price data for tunit {tunit}"
+            logger.warning(msg)
+            raise UnavailablePriceData(msg) from e
+        else:
+            return history
 
     def __add_indicator(self, tunit: str, indicator: Indicator) -> None:
         self.indicators_manager.add(tunit, indicator)
@@ -213,7 +229,7 @@ class PriceManager:
         if not self.exist(tunit):
             self._closes[tunit] = TsQueue(self.__nb_records)
             self._highs[tunit] = TsQueue(self.__nb_records)
-            self.lows[tunit] = TsQueue(self.__nb_records)
+            self._lows[tunit] = TsQueue(self.__nb_records)
 
         self._closes[tunit].push(ts, close)
         self._highs[tunit].push(ts,high)
@@ -222,16 +238,14 @@ class PriceManager:
     def history(self, tunit) -> Dict[str, np.ndarray]:
         if self.exist(tunit):
             prices= {
-                "close": self._closes[tunit].tolist(),
-                "highs": self._highs[tunit].tolist(),
-                "lows":  self._lows[tunit].tolist()
+                "close": self._closes[tunit].values(),
+                "high": self._highs[tunit].values(),
+                "low":  self._lows[tunit].values()
             }
         else :
-            prices = {
-                "close": ([],[]),
-                "highs": ([],[]),
-                "lows": ([],[])
-            }
+            msg = f"No price history for tunit = {tunit}"
+            logger.warning(msg)
+            raise KeyError(msg)
 
         return prices
 
@@ -253,7 +267,7 @@ class IndicatorManager:
 
     def __init__(self, nb_records: int) -> None:
         self.__nb_records: int = nb_records
-        self._indicators: Dict[str, Dict[str,Dict[str,Indicator]]] = None
+        self._indicators: Dict[str, Dict[str,Dict[str,Indicator]]] = {}
 
     def add(self, tunit: str, indicator: Indicator) -> None:
         #TODO implementer la gestion d'ajout d'indicateur en fonction de l'interval et leur id. il faut trouver une
@@ -282,11 +296,22 @@ class IndicatorManager:
             self._indicators[tunit][indicator_name][indicator_params] = indicator
 
     def indicator_value(self, price_manager: PriceManager, id_indicator) -> np.ndarray:
-        parameters=str.split(id_indicator,"_")
-        tunit=parameters[0]
-        name=parameters[1]
-        param=parameters[2]
+        parameters = str.split(id_indicator, "-")
+        tunit = parameters[0]
+        name = str.split(parameters[1], "_")[1]
+        param = str.split(parameters[1], "_")[2]
+        try:
+            indicator = self._indicators[tunit][name][param]
+        except KeyError as e0:
+            msg = f"Unavailable indicator data - id: {id_indicator} - tunit:{tunit} - name:{name} - param: {param} "
+            logger.warning(msg)
+            raise UnavailableIndicatorData
 
-        indicator = self._indicators[tunit][name][param]
-        tunit_price = price_manager.history(tunit)
-        return indicator.value(tunit_price['highs'], tunit_price['lows'], tunit_price['closes'])
+        try:
+            tunit_price = price_manager.history(tunit)
+        except KeyError as e:
+            msg = f"Unavailable price data for tunit {tunit}"
+            logger.warning(msg)
+            raise UnavailablePriceData from e
+        else:
+            return indicator.value(tunit_price['high'], tunit_price['low'], tunit_price['close'])

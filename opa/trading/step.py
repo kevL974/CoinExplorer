@@ -2,6 +2,10 @@ from __future__ import annotations
 from opa.trading.strategy import TradingStrategy
 from opa.trading.technic.analysis import *
 from typing import Tuple
+from opa.AppException import *
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TradingStep(ABC):
@@ -38,6 +42,9 @@ class TradingStep(ABC):
     def on_fail(self) -> None:
         pass
 
+    def on_wait(self) -> None:
+        self.context.transition_to(self)
+
 
 class InitStep(TradingStep):
 
@@ -52,25 +59,38 @@ class InitStep(TradingStep):
 
 
 class CheckBullRunStep(TradingStep):
+    MAX_RETRIES : int = 1400
 
     def __init__(self, id_sma_short: str, id_sma_long: str, id_rsi: str) -> None:
         super().__init__()
         self._id_sma_short: str = id_sma_short
         self._id_sma_long: str = id_sma_long
         self._id_rsi: str = id_rsi
+        self.__nb_retries: int = 0
 
     def check_condition(self) -> None:
-        sma_short = self.context.indicator_value(self._id_sma_short)
-        sma_long = self.context.indicator_value(self._id_sma_long)
-        rsi = self.context.indicator_value(self._id_rsi)
-
-        if(sma_short.ndim > 0) and (len(sma_short) > 0):
-            if (sma_short > sma_long) and (rsi > 50.0):
-                print(f"Check bull run : sma_short ({sma_short}) > sma_long ({sma_long} and rsi ({rsi})")
-                self.on_success()
+        try:
+            sma_short = self.context.indicator_value(self._id_sma_short)
+            sma_long = self.context.indicator_value(self._id_sma_long)
+            rsi = self.context.indicator_value(self._id_rsi)
+        except UnavailableData as e:
+            logger.warning(e.__str__() + f" retries {self.__nb_retries}")
+            if self.__nb_retries < self.MAX_RETRIES:
+                self.__nb_retries += 1
+                self.on_wait()
             else:
-                print(f"Check bull run : sma_short ({sma_short}) < sma_long ({sma_long} and rsi ({rsi})")
-                self.on_fail()
+                msg = f"Can not checking condition cause indicators have issue."
+                logger.error(msg)
+                raise StepError(msg) from e
+        else:
+            self.__nb_retries = 0
+            if(sma_short.ndim > 0) and (len(sma_short) > 0):
+                if (sma_short[-1] > sma_long[-1]) and (rsi[-1] > 50.0).all:
+                    print(f"Check bull run : sma_short ({sma_short[-1]}) > sma_long ({sma_long[-1]} and rsi ({rsi[-1]})")
+                    self.on_success()
+                else:
+                    #print(f"Check bull run : sma_short ({sma_short[-1]}) < sma_long ({sma_long[-1]} and rsi ({rsi[-1]})")
+                    self.on_fail()
 
     def on_fail(self) -> None:
         self.context.first_step()
@@ -102,18 +122,21 @@ class RetestSmaStep(TradingStep):
         self._last_sma: float = 0
 
     def check_condition(self) -> None:
+        print("I m in Retestep")
         try :
             sma = self.context.indicator_value(self._id_sma)
-            tunit = str.split(self._id_sma,"_")[0]
+            tunit = str.split(self._id_sma,"-")[0]
             price = self.context.price_history(tunit)
             price_close = price["close"]
 
             rebounds = self.detect_rebound(price_close,sma)[0]
 
             if rebounds.size == 0:
+                print(f"Rebound not found : {rebounds} ")
                 self.on_fail()
 
             else :
+                print(f"Rebound found : {rebounds.max()} !!! ")
                 self.on_success()
 
         except ValueError:
