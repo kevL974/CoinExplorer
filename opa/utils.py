@@ -182,6 +182,58 @@ def retry_connection_on_ttransportexception(max_retries: int = 5):
 
     return retry_connection
 
+def detect_rebound(price: np.ndarray, indicator_values: np.ndarray,
+                   tolerance: float = 0.002) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Detects whether the price bounces off the 100-period SMA.
+
+    price : np.ndarray of price values (close)
+    sma   : np.ndarray of the 100-period SMA
+    tolerance : relative margin (0.002 = 0.2%) used to consider a "contact"
+
+    Returns:
+        - indices where a rebound is detected
+        - a boolean array indicating rebound or not
+    """
+    price = np.asarray(price)
+    indicator_values = np.asarray(indicator_values)
+
+    # 1. Proximité prix / SMA (contact)
+    relative_diff = np.abs(price - indicator_values) / indicator_values
+    contact = relative_diff < tolerance
+
+    # 2. Rebond : prix remonte après contact
+    rebound = np.zeros_like(price, dtype=bool)
+
+    for i in range(1, len(price) - 1):
+        if contact[i]:
+            # prix avant > prix au contact < prix après  → forme de "V"
+            if price[i] < price[i - 1] and price[i] < price[i + 1]:
+                rebound[i] = True
+
+    indices = np.where(rebound)[0]
+    return indices, rebound
+
+
+def detect_proximity(price: np.ndarray,
+                     indicator_values: np.ndarray,
+                     tolerance: float = 0.002) -> Tuple[np.ndarray, np.ndarray]:
+
+    price = np.asarray(price)
+    indicator_values = np.asarray(indicator_values)
+
+    relative_diff = (price - indicator_values) / indicator_values
+    contact = (np.abs(relative_diff) <= tolerance) | (relative_diff <= 0)
+
+    proximity = np.zeros_like(price, dtype=bool)
+
+    for i in range(1, len(price) - 1):
+        if contact[i]:
+            proximity[i] = True
+
+    indices = np.where(proximity)[0]
+    return indices, proximity
+
 
 class TsQueue:
 

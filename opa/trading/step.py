@@ -1,10 +1,12 @@
 from __future__ import annotations
 from opa.trading.strategy import TradingStrategy
 from opa.trading.technic.analysis import *
-from typing import Tuple
 from opa.AppException import *
 
 import logging
+
+from opa.utils import detect_rebound, detect_proximity
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,11 +44,15 @@ class TradingStep(ABC):
     def on_fail(self) -> None:
         pass
 
+    @abstractmethod
     def on_wait(self) -> None:
         self.context.transition_to(self)
 
 
 class InitStep(TradingStep):
+
+    def on_wait(self) -> None:
+        pass
 
     def on_fail(self) -> None:
         pass
@@ -59,6 +65,7 @@ class InitStep(TradingStep):
 
 
 class CheckBullRunStep(TradingStep):
+
     MAX_RETRIES : int = 1400
 
     def __init__(self, id_sma_short: str, id_sma_long: str, id_rsi: str) -> None:
@@ -98,38 +105,25 @@ class CheckBullRunStep(TradingStep):
     def on_success(self) -> None:
         self.context.transition_to(self.next)
 
+    def on_wait(self) -> None:
+        pass
+
 
 class RetestSmaStep(TradingStep):
-
-    INIT: int = 0
-    START: int = 1
-    SMA_ABOVE_CONVERGENT: int = 11
-    SMA_ABOVE_WAITING_DIVERGENCE: int = 12
-    SMA_ABOVE_DIVERGENT: int = 13
-    SMA_BELOW_CONVERGENT: int = 21
-    SMA_BELOW_WAITING_DIVERGENCE: int = 22
-    SMA_BELOW_DIVERGENT: int = 23
-    FAIL: int = 30
-    SUCCESS: int = 40
 
     def __init__(self, id_sma):
         super().__init__()
         self._id_sma: str = id_sma
-        self._n: int = 0
-        self._d: int = 0
-        self._state: int = self.INIT
-        self._last_price: float = 0
-        self._last_sma: float = 0
 
     def check_condition(self) -> None:
-        print("I m in Retestep")
+        tunit = str.split(self._id_sma, "-")[0]
         try :
             sma = self.context.indicator_value(self._id_sma)
-            tunit = str.split(self._id_sma,"-")[0]
             price = self.context.price_history(tunit)
             price_close = price["close"]
 
-            rebounds = self.detect_rebound(price_close,sma)[0]
+            rebounds = detect_rebound(price_close, sma, tolerance=0.002)[0]
+            print(f"price: {price_close[-1]} --- sma: {sma[-1]}")
 
             if rebounds.size == 0:
                 print(f"Rebound not found : {rebounds} ")
@@ -139,40 +133,9 @@ class RetestSmaStep(TradingStep):
                 print(f"Rebound found : {rebounds.max()} !!! ")
                 self.on_success()
 
-        except ValueError:
+        except UnavailableData:
             print(f"ReTestSmaStep - No price or sma value available")
             self.on_wait()
-
-    def detect_rebound(self, price: np.ndarray, sma: np.ndarray, tolerance: float = 0.002) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Detects whether the price bounces off the 100-period SMA.
-
-        price : np.ndarray of price values (close)
-        sma   : np.ndarray of the 100-period SMA
-        tolerance : relative margin (0.002 = 0.2%) used to consider a "contact"
-
-        Returns:
-            - indices where a rebound is detected
-        - a boolean array indicating rebound or not
-        """
-        price = np.asarray(price)
-        sma = np.asarray(sma)
-
-        # 1. Proximité prix / SMA (contact)
-        relative_diff = np.abs(price - sma) / sma
-        contact = relative_diff < tolerance
-
-        # 2. Rebond : prix remonte après contact
-        rebound = np.zeros_like(price, dtype=bool)
-
-        for i in range(1, len(price) - 1):
-            if contact[i]:
-                # prix avant > prix au contact < prix après  → forme de "V"
-                if price[i] < price[i - 1] and price[i] < price[i + 1]:
-                    rebound[i] = True
-
-        indices = np.where(rebound)[0]
-        return indices, rebound
 
     def on_wait(self) -> None:
         self.context.transition_to(self)
@@ -182,3 +145,40 @@ class RetestSmaStep(TradingStep):
 
     def on_fail(self) -> None:
         self.context.first_step()
+
+
+class PriceOnLowBollingerBdStep(TradingStep):
+
+    def __init__(self, id_bbollinger : str):
+        super().__init__()
+        self._id_bbollinger: str = id_bbollinger
+
+    def check_condition(self) -> None:
+        tunit = str.split(self._id_bbollinger, "-")[0]
+
+        try:
+            low_bollinger_band = self.context.indicator_value(self._id_bbollinger)[1]
+            price = self.context.price_history(tunit)
+            price_close = price["close"]
+
+            proximity = detect_proximity(price_close,low_bollinger_band)[0]
+
+            if proximity.size == 0:
+                print("im in Bollinger bands checking")
+                self.on_fail()
+            else:
+                self.on_success()
+        except UnavailableData as e:
+            logger.warning(e)
+            self.on_wait()
+
+
+
+    def on_success(self) -> None:
+        self.context.transition_to(self.next)
+
+    def on_fail(self) -> None:
+        self.context.first_step()
+
+    def on_wait(self) -> None:
+        self.context.transition_to(self)

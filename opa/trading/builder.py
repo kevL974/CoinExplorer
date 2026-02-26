@@ -1,4 +1,4 @@
-from opa.trading.step import TradingStep, InitStep, CheckBullRunStep, RetestSmaStep
+from opa.trading.step import TradingStep, InitStep, CheckBullRunStep, RetestSmaStep, PriceOnLowBollingerBdStep
 from opa.trading.technic.analysis import *
 
 
@@ -13,7 +13,7 @@ class Builder(ABC):
         pass
 
     @abstractmethod
-    def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
+    def set_checking_lower_bollinger_band_breach(self, tunit: str, bollinger_bands : BollingerBdIndicator) -> None:
         pass
 
     @abstractmethod
@@ -66,8 +66,8 @@ class Director:
         t_5m = "5m"
 
         self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m,20), SmaIndicator(t_5m,50), RsiIndicator(t_5m, 14))
-        self._builder.set_checking_retest_sma(t_4h, SmaIndicator(t_4h,100))
-        self._builder.set_checking_lower_bollinger_band_breach(t_4h)
+        self._builder.set_checking_retest_sma(t_15m, SmaIndicator(t_15m,100))
+        self._builder.set_checking_lower_bollinger_band_breach(t_5m, BollingerBdIndicator(t_5m))
         self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(t_4h,20), SmaIndicator(t_4h,50))
         self._builder.set_checking_rsi_break_through_neutral_line(t_4h, RsiIndicator(t_4h,14))
         self._builder.set_checking_macd_bullish_crossover(t_4h, MACDIndicator(t_4h,12,26,9))
@@ -91,8 +91,8 @@ class EnvironmentSetBuilder(Builder):
     def set_checking_retest_sma(self, tunit: str, sma: SmaIndicator) -> None:
         self._product.add_indicator(tunit, sma)
 
-    def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
-        pass
+    def set_checking_lower_bollinger_band_breach(self, tunit: str, bollinger_bands : BollingerBdIndicator) -> None:
+        self._product.add_indicator(tunit, bollinger_bands)
 
     def set_checking_sma_convergence(self, tunit: str, sma_below: SmaIndicator, sma_above: SmaIndicator) -> None:
         pass
@@ -139,11 +139,14 @@ class TradingStepBuilder(Builder):
         self._current_step.next = RetestSmaStep(id_sma)
         self._current_step = self._current_step.next
 
-    def set_checking_lower_bollinger_band_breach(self, tunit: str) -> None:
-        pass
+    def set_checking_lower_bollinger_band_breach(self, tunit: str, bollinger_bands : BollingerBdIndicator) -> None:
+        id_bollinger_bands = Environment.create_identifier(tunit, bollinger_bands)
+        self._current_step.next = PriceOnLowBollingerBdStep(id_bollinger_bands)
+        self._current_step = self._current_step.next
 
     def set_checking_sma_convergence(self, tunit: str, sma_below: SmaIndicator, sma_above: SmaIndicator) -> None:
-        pass
+        self._current_step.next = InitStep()
+        self._current_step = self._current_step.next
 
     def set_checking_rsi_break_through_neutral_line(self, tunit: str, rsi: RsiIndicator) -> None:
         pass
