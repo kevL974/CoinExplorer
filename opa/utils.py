@@ -235,6 +235,32 @@ def detect_proximity(price: np.ndarray,
     return indices, proximity
 
 
+def detect_convergence(curve_below: np.ndarray, curve_above: np.ndarray, window: int = 10) -> bool:
+    curve_below = np.asarray(curve_below)
+    curve_above = np.asarray(curve_above)
+
+    curve_below = curve_below[np.isfinite(curve_below)]
+    curve_above = curve_above[np.isfinite(curve_above)]
+
+    if curve_above.size <= curve_below.size :
+        perimeter = curve_above.size
+    else:
+        perimeter = curve_below.size
+
+    if perimeter <= window:
+        window = perimeter
+
+    is_below = np.all(curve_below[-perimeter:] < curve_above[-perimeter:])
+
+    curve_below = curve_below[-window:]
+    curve_above = curve_above[-window:]
+
+    distance = np.abs(curve_below - curve_above)
+    limit = distance[-1] <= 50
+    trend = np.all(np.diff(distance) <= 0); print(distance); print(np.diff(distance)); print(limit)
+    return limit and trend and is_below
+
+
 class TsQueue:
 
     def __init__(self, maxlen: int = 10) -> None:
