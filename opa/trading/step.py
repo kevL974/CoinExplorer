@@ -2,10 +2,11 @@ from __future__ import annotations
 from opa.trading.strategy import TradingStrategy
 from opa.trading.technic.analysis import *
 from opa.AppException import *
+from opa.utils import detect_rebound, detect_proximity, detect_convergence
 
 import logging
 
-from opa.utils import detect_rebound, detect_proximity
+
 
 logger = logging.getLogger(__name__)
 
@@ -160,19 +161,51 @@ class PriceOnLowBollingerBdStep(TradingStep):
             low_bollinger_band = self.context.indicator_value(self._id_bbollinger)[1]
             price = self.context.price_history(tunit)
             price_close = price["close"]
+        except UnavailableData as e:
+            logger.warning(e)
+            self.on_wait()
 
-            proximity = detect_proximity(price_close,low_bollinger_band)[0]
+        else :
+            proximity = detect_proximity(price_close, low_bollinger_band)[0]
 
             if proximity.size == 0:
                 print("im in Bollinger bands checking")
                 self.on_fail()
             else:
                 self.on_success()
+
+    def on_success(self) -> None:
+        self.context.transition_to(self.next)
+
+    def on_fail(self) -> None:
+        self.context.first_step()
+
+    def on_wait(self) -> None:
+        self.context.transition_to(self)
+
+class ConvergingMovingAverages(TradingStep):
+
+    def __init__(self, id_sma_below: str, id_sma_above: str):
+        super().__init__()
+        self._id_sma_below : str = id_sma_below
+        self._id_sma_above : str = id_sma_above
+
+    def check_condition(self) -> None:
+        try:
+
+            sma_below = self.context.indicator_value(self._id_sma_below)
+            sma_above = self.context.indicator_value(self._id_sma_above)
+
         except UnavailableData as e:
             logger.warning(e)
             self.on_wait()
 
+        else :
 
+            if not detect_convergence(sma_below,sma_above):
+                self.on_fail()
+            else:
+                self.on_success()
 
     def on_success(self) -> None:
         self.context.transition_to(self.next)
