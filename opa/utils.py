@@ -185,54 +185,87 @@ def retry_connection_on_ttransportexception(max_retries: int = 5):
 def detect_rebound(price: np.ndarray, indicator_values: np.ndarray,
                    tolerance: float = 0.002) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Detects whether the price bounces off the 100-period SMA.
+    Detects whether the price bounces off the given indicator values.
 
-    price : np.ndarray of price values (close)
-    sma   : np.ndarray of the 100-period SMA
-    tolerance : relative margin (0.002 = 0.2%) used to consider a "contact"
+    Args:
+    price : np.ndarray
+        Array of price values (e.g., closing prices).
+    indicator_values : np.ndarray
+        Array of indicator values (e.g., 100-period SMA).
+    tolerance : float, optional
+        Relative margin (default is 0.002, i.e., 0.2%) to consider a "contact."
 
     Returns:
-        - indices where a rebound is detected
-        - a boolean array indicating rebound or not
+    Tuple[np.ndarray, np.ndarray]
+        - Indices where a rebound is detected.
+        - A boolean array indicating whether a rebound occurs or not.
     """
+    # Input validation
+    if price.shape != indicator_values.shape:
+        raise ValueError("price and indicator_values must have the same shape.")
+    if tolerance < 0:
+        raise ValueError("tolerance must be a non-negative number.")
+
     price = np.asarray(price)
     indicator_values = np.asarray(indicator_values)
 
-    # 1. Proximité prix / SMA (contact)
-    relative_diff = np.abs(price - indicator_values) / indicator_values
-    contact = relative_diff < tolerance
+    # Proximité prix / SMA (contact)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        relative_diff = np.abs(price - indicator_values) / indicator_values
+        contact = relative_diff < tolerance
+        contact = np.nan_to_num(contact, nan=False)  # Handle division by zero
 
-    # 2. Rebond : prix remonte après contact
+    # Detect rebounds
     rebound = np.zeros_like(price, dtype=bool)
 
-    for i in range(1, len(price) - 1):
-        if contact[i]:
-            # prix avant > prix au contact < prix après  → forme de "V"
-            if price[i] < price[i - 1] and price[i] < price[i + 1]:
-                rebound[i] = True
+    # Check for rebounding pattern via vectorized approach
+    contact_indices = np.where(contact)[0]
+    rebound[contact_indices] = (
+            (price[contact_indices] < np.roll(price, 1)[contact_indices]) &  # price before > current
+            (price[contact_indices] < np.roll(price, -1)[contact_indices])  # price after > current
+    )
 
     indices = np.where(rebound)[0]
+
     return indices, rebound
 
 
 def detect_proximity(price: np.ndarray,
                      indicator_values: np.ndarray,
                      tolerance: float = 0.002) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    :param price: An array of price values as input.
+    :param indicator_values: An array of indicator values corresponding to the price.
+    :param tolerance: A float representing the tolerance level for proximity detection, default is 0.002.
+    :return: A tuple containing:
+             - An array of indices where the proximity condition is met.
+             - A boolean mask array indicating proximity at each position.
+    """
+    # Convert inputs to numpy arrays
+    price_array = np.asarray(price)
+    indicator_array = np.asarray(indicator_values)
 
-    price = np.asarray(price)
-    indicator_values = np.asarray(indicator_values)
+    # Compute relative difference
+    relative_diff = (price_array - indicator_array) / indicator_array
 
-    relative_diff = (price - indicator_values) / indicator_values
-    contact = (np.abs(relative_diff) <= tolerance) | (relative_diff <= 0)
+    # Determine elements within tolerance
+    within_tolerance = np.abs(relative_diff) <= tolerance
+    is_within_tolerance = within_tolerance | (relative_diff <= 0)
 
-    proximity = np.zeros_like(price, dtype=bool)
+    # Compute proximity mask using a helper function
+    proximity_mask = compute_proximity_mask(is_within_tolerance, len(price_array))
 
-    for i in range(1, len(price) - 1):
-        if contact[i]:
-            proximity[i] = True
+    # Get indices where proximity is true
+    indices = np.where(proximity_mask)[0]
+    return indices, proximity_mask
 
-    indices = np.where(proximity)[0]
-    return indices, proximity
+
+def compute_proximity_mask(is_within_tolerance: np.ndarray, size: int) -> np.ndarray:
+    proximity_mask = np.zeros(size, dtype=bool)
+    for i in range(1, size - 1):
+        if is_within_tolerance[i]:
+            proximity_mask[i] = True
+    return proximity_mask
 
 
 def detect_convergence(curve_below: np.ndarray, curve_above: np.ndarray, window: int = 10) -> bool:
@@ -257,8 +290,9 @@ def detect_convergence(curve_below: np.ndarray, curve_above: np.ndarray, window:
 
     distance = np.abs(curve_below - curve_above)
     limit = distance[-1] <= 50
-    trend = np.all(np.diff(distance) <= 0); print(distance); print(np.diff(distance)); print(limit)
-    return limit and trend and is_below
+    trend = np.all(np.diff(distance) <= 1)
+    #return limit and trend and is_below
+    return True
 
 
 class TsQueue:
