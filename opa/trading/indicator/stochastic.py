@@ -35,8 +35,8 @@ class StochasticIndicator(BaseIndicator):
 
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
         return talib.STOCH(highs,
-                            closes,
                             lows,
+                            closes,
                             self._fastk_period,
                             self._slowk_period,
                             self._slowk_matype,
