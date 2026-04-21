@@ -7,7 +7,7 @@ from opa.trading.services import Environment
 from opa.trading.steps.base import BaseTradingStep, InitStep
 from opa.trading.steps.crossing import BreakingRsiNeutralLine, RetestSmaStep, PriceOnLowBollingerBdStep, \
     MacdCrossAboveSignalStep
-from opa.trading.steps.trend import CheckBullRunStep, ConvergingMovingAverages
+from opa.trading.steps.trend import CheckBullRunStep, ConvergingMovingAverages, OversoldStochasticStep
 from opa.trading.indicator.base import *
 
 
@@ -114,7 +114,7 @@ class EnvironmentSetBuilder(Builder):
         self._product.add_indicator(tunit,macd)
 
     def set_checking_oversold_stochastic(self, tunit: str, stoch: StochasticIndicator) -> None:
-        pass
+        self._product.add_indicator(tunit, stoch)
 
     def set_checking_parabolic_sar_dots_below(self, tunit: str) -> None:
         pass
@@ -171,7 +171,9 @@ class TradingStepBuilder(Builder):
         self._current_step = self._current_step.next
 
     def set_checking_oversold_stochastic(self, tunit: str, stoch: StochasticIndicator) -> None:
-        pass
+        id_stoch = Environment.create_identifier(tunit, stoch)
+        self._current_step.next = OversoldStochasticStep(id_stoch)
+        self._current_step = self._current_step.next
 
     def set_checking_parabolic_sar_dots_below(self, tunit: str) -> None:
         pass

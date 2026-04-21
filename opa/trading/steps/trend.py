@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from opa.AppException import UnavailableData, StepError
 from opa.trading.steps.base import BaseTradingStep, logger
 from opa.utils import detect_convergence
@@ -72,7 +74,39 @@ class ConvergingMovingAverages(BaseTradingStep):
             if not detect_convergence(sma_below,sma_above):
                 self.on_fail()
             else:
+                print("Convergence detected.")
                 self.on_success()
+
+    def on_success(self) -> None:
+        self.context.transition_to(self.next)
+
+    def on_fail(self) -> None:
+        self.context.first_step()
+
+    def on_wait(self) -> None:
+        self.context.transition_to(self)
+
+class OversoldStochasticStep(BaseTradingStep):
+
+    def __init__(self, id_stoch: str):
+        super().__init__()
+        self._id_stoch: str = id_stoch
+
+    def check_condition(self) -> None:
+        try:
+
+            slowk, slowd = self.context.indicator_value(self._id_stoch)
+
+            if np.all(slowd[-5:] < 20) and np.all(slowk[-5:] < 20):
+                print("Oversold Stochastic Indicator")
+                self.on_success()
+            else:
+                self.on_fail()
+
+
+        except UnavailableData as e:
+            logger.warning(e)
+            self.on_wait()
 
     def on_success(self) -> None:
         self.context.transition_to(self.next)
