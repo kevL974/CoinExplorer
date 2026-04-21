@@ -1,15 +1,20 @@
 from __future__ import annotations
-from abc import ABC, ABCMeta, abstractmethod
-from opa.trading.step import *
+
+from opa.core.candlestick import Candlestick
+from opa.trading.services import Environment
+from opa.trading.steps.base import *
 from opa.AppException import *
+from typing import Dict
+
+import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
 class TradingStrategy(ABC):
 
-    def __init__(self, step: TradingStep, environment: Environment):
+    def __init__(self, step: BaseTradingStep, environment: Environment):
         self._environment: Environment = environment
-        self._initial_step: TradingStep = step
+        self._initial_step: BaseTradingStep = step
 
     def on_receiving_candlestick(self, candlestick: Candlestick) -> None:
         self._environment.put(candlestick)
@@ -31,7 +36,7 @@ class TradingStrategy(ABC):
         pass
 
     @abstractmethod
-    def transition_to(self, step: TradingStep) -> None:
+    def transition_to(self, step: BaseTradingStep) -> None:
         pass
 
     @abstractmethod
@@ -41,7 +46,7 @@ class TradingStrategy(ABC):
 
 class DayTradingStrategy(TradingStrategy):
 
-    def __init__(self, step: TradingStep, environment: Environment) -> None:
+    def __init__(self, step: BaseTradingStep, environment: Environment) -> None:
         super().__init__(step, environment)
         self._step = None
         self.first_step()
@@ -74,7 +79,7 @@ class DayTradingStrategy(TradingStrategy):
     def first_step(self) -> None:
         self.transition_to(self._initial_step)
 
-    def transition_to(self, step: TradingStep) -> None:
+    def transition_to(self, step: BaseTradingStep) -> None:
         step.context = self
 
         if step is self._initial_step:

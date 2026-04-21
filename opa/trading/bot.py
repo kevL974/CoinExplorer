@@ -1,6 +1,6 @@
 from opa.trading.builder import Director, EnvironmentSetBuilder, TradingStepBuilder
 from opa.trading.strategy import *
-from opa.trading.technic.analysis import *
+from opa.trading.indicator.base import *
 from opa.core.candlestick import Candlestick
 from opa.utils import parse_connection_settings, dict_to_candlesticks
 from opa.storage.connector import KafkaConnector
@@ -29,7 +29,7 @@ class TradingBot:
 
 async def run_bot(consumer: KafkaConsumer, bot: TradingBot) -> None:
     for msg in consumer:
-        candlestick = dict_to_candlesticks(json.loads(msg.value)); print(candlestick)
+        candlestick = dict_to_candlesticks(json.loads(msg.value))#; print(candlestick)
         bot.submit_new_candlestick(candlestick)
 
 

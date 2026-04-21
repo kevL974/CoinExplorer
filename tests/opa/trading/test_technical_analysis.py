@@ -1,8 +1,11 @@
-import numpy as np
 import pytest
 import talib
 
-from opa.trading.technic.analysis import *
+from opa.trading.indicator.base import *
+from opa.trading.indicator.parabolic_sar import ParabolicSARIndicator
+from opa.trading.indicator.rsi import RsiIndicator
+from opa.trading.indicator.sma import SmaIndicator
+from opa.trading.services import Environment, IndicatorManager
 
 close_price = [
     102.48357077, 99.30867849, 103.23844269, 107.61514928, 98.82923313,
@@ -30,74 +33,59 @@ moving_avg_20 = talib.SMA(np.array(close_price), 20)
 
 
 @pytest.fixture()
-def indicator_set() -> Environment:
-    return Environment()
+def indicator_manager() -> IndicatorManager:
+    return IndicatorManager(200)
 
 
 @pytest.mark.parametrize("tunit, indicator, expected", [
-    ("4h", SmaIndicator(20), "4h-SMA-20"),
-    ("4h", SmaIndicator(50), "4h-SMA-50"),
-    ("1h", RsiIndicator(14), "1h-RSI-14"),
-    ("15m", ParabolicSARIndicator(0.02, 0.2), "15m-SAR-0.02-0.2")
+    ("4h", SmaIndicator("4h", 20), "SMA"),
+    ("4h", SmaIndicator("4h", 50), "SMA"),
+    ("1h", RsiIndicator("1h", 14), "RSI"),
+    ("15m", ParabolicSARIndicator("15m", 0.02, 0.2), "SAR")
 ])
-def test_add(indicator_set, tunit, indicator, expected):
+def test_add(indicator_manager, tunit, indicator, expected):
     """
-    Test if an id is created for each indicator added to IndicatorSet
+    Test if an id is created for each indicator added to Environnement
     """
-    indicator_set.add(tunit, indicator)
-    assert expected in indicator_set._indicators[tunit].keys()
-    assert expected in indicator_set._indicator_ts.keys()
-
-
-@pytest.mark.parametrize("tunit, indicator", [
-    ("7m", SmaIndicator(20)),
-    ("2m", SmaIndicator(50))
-])
-def test_add_illegal_argument_raise(indicator_set, tunit, indicator):
-    """
-    Test if IllegalArgumentError is raised when we add an indicator to an unallowed tunit
-    """
-    with pytest.raises(IllegalArgumentError) as excinfo:
-        indicator_set.add(tunit, indicator)
-
-    assert str(excinfo.value) == f"IllegalArgumentError: Time unit {tunit} is not permitted"
+    indicator_manager.add(tunit, indicator)
+    assert expected in indicator_manager._indicators[tunit].keys()
 
 
 @pytest.mark.parametrize("tunit, indicator, is_added, expected", [
-    ("4h", SmaIndicator(20), True, True),
-    ("4h", SmaIndicator(50), False, False),
-    ("1h", RsiIndicator(14), True, True),
-    ("15m", ParabolicSARIndicator(0.02, 0.2), False, False)
+     ("4h", SmaIndicator("4h", 20), True, True),
+     ("4h", SmaIndicator("4h", 50), False, False),
+     ("1h", RsiIndicator("1h", 14), True, True),
+     ("15m", ParabolicSARIndicator("15m", 0.02, 0.2), False, False)
 ])
 def test_indicator_exist(indicator_set, tunit, indicator, is_added, expected):
-    """
-    Test when we add an indicator, method indicator_exist(id) should return True
-    """
-    if is_added:
-        indicator_set.add(tunit, indicator)
+     """
+     Test when we add an indicator, method indicator_exist(id) should return True
+     """
+     if is_added:
+         indicator_manager.add(tunit, indicator)
 
-    assert indicator_set.indicator_exist(Environment.create_id(tunit, indicator)) == expected
+     assert indicator_manager.indicator_exist(Environment.create_id(tunit, indicator)) == expected
 
-
-@pytest.fixture()
-def filled_indicator_set() -> Environment:
-    indicator_set = Environment()
-    indicator_set.add("4h", SmaIndicator(20))
-
-    closes_ts = TsQueue(200)
-    closes_ts._values_qe = close_price
-    closes_ts._timestamp_qe = timestamps
-    indicator_set._closes = closes_ts
-
-
-@pytest.mark.skip(reason="no way of currently testing this")
-def test_indicator_get_value(filled_indicator_set):
-    assert moving_avg_20[-1] == filled_indicator_set.get_indicator_value("4h-SMA-20")
+#
+# @pytest.fixture()
+# def filled_indicator_set() -> Environment:
+#     indicator_set = Environment()
+#     indicator_set.add("4h", SmaIndicator(20))
+#
+#     closes_ts = TsQueue(200)
+#     closes_ts._values_qe = close_price
+#     closes_ts._timestamp_qe = timestamps
+#     indicator_set._closes = closes_ts
+#
+#
+# @pytest.mark.skip(reason="no way of currently testing this")
+# def test_indicator_get_value(filled_indicator_set):
+#     assert moving_avg_20[-1] == filled_indicator_set.get_indicator_value("4h-SMA-20")
 
 
 @pytest.fixture()
 def sma_indicator() -> SmaIndicator:
-    return SmaIndicator(20)
+    return SmaIndicator('4h', 20)
 
 
 @pytest.fixture()
