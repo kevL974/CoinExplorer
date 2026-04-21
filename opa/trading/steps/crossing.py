@@ -4,7 +4,7 @@ import numpy as np
 
 from opa.AppException import UnavailableData
 from opa.trading.steps.base import BaseTradingStep, logger
-from opa.utils import detect_proximity, detect_rebound
+from opa.utils import detect_proximity, detect_rebound, detect_crossing
 
 
 class BreakingRsiNeutralLine(BaseTradingStep):
@@ -107,6 +107,37 @@ class PriceOnLowBollingerBdStep(BaseTradingStep):
                 self.on_fail()
             else:
                 self.on_success()
+
+    def on_success(self) -> None:
+        self.context.transition_to(self.next)
+
+    def on_fail(self) -> None:
+        self.context.first_step()
+
+    def on_wait(self) -> None:
+        self.context.transition_to(self)
+
+
+class MacdCrossAboveSignalStep(BaseTradingStep):
+
+    def __init__(self, id_macd):
+        super().__init__()
+        self._id_macd: str = id_macd
+
+    def check_condition(self) -> None:
+
+        try:
+            macd, signal, hist = self.context.indicator_value(self._id_macd)
+
+            if detect_crossing(macd, signal):
+                print("macd crossed")
+                self.on_success()
+            else :
+                print("macd crossed fail")
+                self.on_fail()
+        except UnavailableData as e:
+            logger.warning(e)
+            self.on_wait()
 
     def on_success(self) -> None:
         self.context.transition_to(self.next)

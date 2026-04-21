@@ -1,5 +1,14 @@
-from opa.trading.step import TradingStep, InitStep, CheckBullRunStep, RetestSmaStep, PriceOnLowBollingerBdStep
-from opa.trading.technic.analysis import *
+from opa.trading.indicator.bollinger import BollingerBdIndicator
+from opa.trading.indicator.macd import MACDIndicator
+from opa.trading.indicator.rsi import RsiIndicator
+from opa.trading.indicator.sma import SmaIndicator
+from opa.trading.indicator.stochastic import StochasticIndicator
+from opa.trading.services import Environment
+from opa.trading.steps.base import BaseTradingStep, InitStep
+from opa.trading.steps.crossing import BreakingRsiNeutralLine, RetestSmaStep, PriceOnLowBollingerBdStep, \
+    MacdCrossAboveSignalStep
+from opa.trading.steps.trend import CheckBullRunStep, ConvergingMovingAverages
+from opa.trading.indicator.base import *
 
 
 class Builder(ABC):
@@ -25,7 +34,7 @@ class Builder(ABC):
         pass
 
     @abstractmethod
-    def set_checking_macd_bullish_crossover(self, tunit: str, macd: MACDIndicator) -> None:
+    def set_checking_macd_cross_above_signal(self, tunit: str, macd: MACDIndicator) -> None:
         pass
 
     @abstractmethod
@@ -65,15 +74,15 @@ class Director:
         t_15m = "15m"
         t_5m = "5m"
 
-        self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m,20), SmaIndicator(t_5m,50), RsiIndicator(t_5m, 14))
-        self._builder.set_checking_retest_sma(t_15m, SmaIndicator(t_15m,100))
+        self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m, 20), SmaIndicator(t_5m, 50), RsiIndicator(t_5m, 14))
+        self._builder.set_checking_retest_sma(t_15m, SmaIndicator(t_15m, 100))
         self._builder.set_checking_lower_bollinger_band_breach(t_5m, BollingerBdIndicator(t_5m))
-        self._builder.set_checking_sma_convergence(t_4h, SmaIndicator(t_4h,20), SmaIndicator(t_4h,50))
-        self._builder.set_checking_rsi_break_through_neutral_line(t_4h, RsiIndicator(t_4h,14))
-        self._builder.set_checking_macd_bullish_crossover(t_4h, MACDIndicator(t_4h,12,26,9))
-        self._builder.set_checking_oversold_stochastic(t_4h, StochasticIndicator(t_4h,12,3,0,3,0))
-        self._builder.set_checking_oversold_stochastic(t_1h, StochasticIndicator(t_1h,12, 3, 0, 3, 0))
-        self._builder.set_checking_oversold_stochastic(t_15m, StochasticIndicator(t_15m,12, 3, 0, 3, 0))
+        self._builder.set_checking_sma_convergence(t_15m, SmaIndicator(t_15m, 20), SmaIndicator(t_15m, 50))
+        self._builder.set_checking_rsi_break_through_neutral_line(t_5m, RsiIndicator(t_5m, 14))
+        self._builder.set_checking_macd_cross_above_signal(t_4h, MACDIndicator(t_4h, 12, 26, 9))
+        self._builder.set_checking_oversold_stochastic(t_4h, StochasticIndicator(t_4h, 12, 3, 0, 3, 0))
+        self._builder.set_checking_oversold_stochastic(t_1h, StochasticIndicator(t_1h, 12, 3, 0, 3, 0))
+        self._builder.set_checking_oversold_stochastic(t_15m, StochasticIndicator(t_15m, 12, 3, 0, 3, 0))
 
 
 class EnvironmentSetBuilder(Builder):
@@ -95,13 +104,14 @@ class EnvironmentSetBuilder(Builder):
         self._product.add_indicator(tunit, bollinger_bands)
 
     def set_checking_sma_convergence(self, tunit: str, sma_below: SmaIndicator, sma_above: SmaIndicator) -> None:
-        pass
+        self._product.add_indicator(tunit, sma_below)
+        self._product.add_indicator(tunit, sma_above)
 
     def set_checking_rsi_break_through_neutral_line(self, tunit: str, rsi: RsiIndicator) -> None:
-        pass
+        self._product.add_indicator(tunit, rsi)
 
-    def set_checking_macd_bullish_crossover(self, tunit: str, macd: MACDIndicator) -> None:
-        pass
+    def set_checking_macd_cross_above_signal(self, tunit: str, macd: MACDIndicator) -> None:
+        self._product.add_indicator(tunit,macd)
 
     def set_checking_oversold_stochastic(self, tunit: str, stoch: StochasticIndicator) -> None:
         pass
@@ -123,8 +133,8 @@ class TradingStepBuilder(Builder):
 
     def __init__(self) -> None:
         super().__init__()
-        self._product: TradingStep = None
-        self._current_step: TradingStep = None
+        self._product: BaseTradingStep = None
+        self._current_step: BaseTradingStep = None
         self.reset()
 
     def set_checking_bullrun(self, tunit: str, sma_short: SmaIndicator, sma_long : SmaIndicator, rsi: RsiIndicator) -> None:
@@ -145,14 +155,20 @@ class TradingStepBuilder(Builder):
         self._current_step = self._current_step.next
 
     def set_checking_sma_convergence(self, tunit: str, sma_below: SmaIndicator, sma_above: SmaIndicator) -> None:
-        self._current_step.next = InitStep()
+        id_sma_below = Environment.create_identifier(tunit, sma_below)
+        id_sma_above = Environment.create_identifier(tunit, sma_above)
+        self._current_step.next = ConvergingMovingAverages(id_sma_below, id_sma_above)
         self._current_step = self._current_step.next
 
     def set_checking_rsi_break_through_neutral_line(self, tunit: str, rsi: RsiIndicator) -> None:
-        pass
+        id_rsi = Environment.create_identifier(tunit, rsi)
+        self._current_step.next = BreakingRsiNeutralLine(id_rsi)
+        self._current_step = self._current_step.next
 
-    def set_checking_macd_bullish_crossover(self, tunit: str, macd: MACDIndicator) -> None:
-        pass
+    def set_checking_macd_cross_above_signal(self, tunit: str, macd: MACDIndicator) -> None:
+        id_macd = Environment.create_identifier(tunit, macd)
+        self._current_step.next = MacdCrossAboveSignalStep(id_macd)
+        self._current_step = self._current_step.next
 
     def set_checking_oversold_stochastic(self, tunit: str, stoch: StochasticIndicator) -> None:
         pass
@@ -165,7 +181,7 @@ class TradingStepBuilder(Builder):
         self._current_step = self._product
 
     @property
-    def product(self) -> TradingStep:
+    def product(self) -> BaseTradingStep:
         product = self._product
         self.reset()
         return product

@@ -260,6 +260,27 @@ def detect_convergence(curve_below: np.ndarray, curve_above: np.ndarray, window:
     trend = np.all(np.diff(distance) <= 0); print(distance); print(np.diff(distance)); print(limit)
     return limit and trend and is_below
 
+def detect_crossing(curve_below: np.ndarray, curve_above: np.ndarray) -> bool:
+    if len(curve_below) != len(curve_above):
+        raise ValueError("Les listes doivent avoir la même longueur")
+    
+    mask = ~np.isnan(curve_below) & ~np.isnan(curve_above)
+    if not np.any(mask):
+        raise ValueError("Toutes les valeurs sont NaN")
+    
+    l1_filtered = curve_below[mask]
+    l2_filtered = curve_above[mask]
+    
+    if l1_filtered[0] >= l1_filtered[-1]:
+        return False
+    
+    diff = l1_filtered - l2_filtered
+    sign_changes = np.diff(np.sign(diff))
+    
+    if 2 in sign_changes :
+        return True
+    
+    return False
 
 class TsQueue:
 
