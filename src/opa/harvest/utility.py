@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import shutil
@@ -13,6 +14,8 @@ from argparse import ArgumentTypeError
 from pathlib import Path
 
 from opa.util.binance.enums import *
+
+logger = logging.getLogger(__name__)
 
 
 def get_destination_dir(file_url, folder=None):
@@ -48,7 +51,7 @@ async def download_file(base_path, file_name, date_range=None, folder=None):
     save_path = get_destination_dir(os.path.join(base_path, file_name), folder)
 
     if os.path.exists(save_path):
-        print("\nfile already exists! {}".format(save_path))
+        logger.debug("File already exists: %s", save_path)
         return save_path
 
     # make the directory
@@ -69,7 +72,7 @@ async def download_file(base_path, file_name, date_range=None, folder=None):
 
                     async with aiofiles.open(save_path, mode='wb') as out_file:
                         dl_progress = 0
-                        print("\nFile Download: {}".format(save_path))
+                        logger.info("File Download: %s", save_path)
 
                         while True:
                             buf = await dl_file.content.read(blocksize)
@@ -86,7 +89,7 @@ async def download_file(base_path, file_name, date_range=None, folder=None):
                     return None
 
     except aiohttp.http_exceptions.HttpProcessingError:
-        print("\nFile not found: {}".format(download_url))
+        logger.warning("File not found: %s", download_url)
         aio_remove(save_path)
         return None
 
@@ -115,7 +118,7 @@ def check_directory(arg_value):
         while True:
             option = input('Folder already exists! Do you want to overwrite it? y/n  ')
             if option != 'y' and option != 'n':
-                print('Invalid Option!')
+                logger.warning("Invalid option!")
                 continue
             elif option == 'y':
                 shutil.rmtree(arg_value)

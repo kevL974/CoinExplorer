@@ -1,5 +1,7 @@
 import argparse
 import asyncio
+import logging
+from opa.logging_config import configure_logging
 from opa.storage.schema import *
 from opa.storage.repository import HbaseCrudRepository
 from opa.utils import *
@@ -8,6 +10,9 @@ from opa.storage.model import Asset
 from typing import List
 from opa.harvest.utility import download_file, convert_to_date_object, get_path
 from tqdm.asyncio import tqdm
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 10000
 
@@ -73,9 +78,9 @@ async def collect_hist_data(symbols: List[str], intervals: List[str], tb_binance
     lock = asyncio.Lock()
     current = 1
     num_symbols = len(symbols)
-    print("Found {} symbols".format(num_symbols))
+    logger.info("Found %d symbols", num_symbols)
     for symbol in symbols:
-        print("[{}/{}] - start download monthly {} klines ".format(current, num_symbols, symbol))
+        logger.info("[%d/%d] - start download monthly %s klines", current, num_symbols, symbol)
         for interval in intervals:
             collectors.append(asyncio.ensure_future(update_available_assets(symbol, interval, tb_info, lock)))
             for year in YEARS:

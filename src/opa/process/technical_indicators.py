@@ -1,6 +1,9 @@
+import logging
 from talib import stream
 import numpy as np
 from typing import List, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 def simple_mobile_average(price: List, timeperiod: int) -> float:
@@ -60,17 +63,3 @@ def stochastic(high: List, low: List, close: List, timeperiod: int = 10) -> floa
     stream.STOCH()
 
 
-if __name__ == '__main__':
-    price = [float(x) for x in range(0, 200, 1)]
-    price2 = [float(x) for x in range(10, 150, 2)]
-    price2.reverse()
-    price.extend(price2)
-
-    timeperiod = 5
-
-    sma = simple_mobile_average(price, timeperiod)
-    ema = exponential_mobile_average(price, timeperiod)
-    stch_rsi = stochastic_relative_strength_index(price)
-    print(sma)
-    print(ema)
-    print(stch_rsi)

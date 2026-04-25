@@ -26,3 +26,26 @@ dev       = ["pytest", "pytest-asyncio", "pytest-cov"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--tb=short"
+python_files = ["test_*.py", "*_tests.py"]
+
+[tool.coverage.run]
+source = ["src/opa"]
+omit = [
+    "src/opa/storage/*",
+    "src/opa/harvest/*",
+    "src/opa/trading/bot.py",
+    "src/opa/trading/builder.py",
+    "src/opa/trading/wallet.py",
+    "src/opa/trading/signal.py",
+    "src/opa/process/exponential_moving_averages.py",
+    "src/opa/logging_config.py",
+]
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true

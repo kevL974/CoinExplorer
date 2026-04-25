@@ -1,11 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from typing import Optional, List, Tuple
 from datetime import datetime
+from opa.logging_config import configure_logging
 from opa.storage.repository import HbaseCrudRepository
 from opa.storage.schema import *
 import pandas as pd
 import uvicorn
 import os
+
+configure_logging()
 
 app = FastAPI(title="OPA the cryptocurrency genius",
               description="I'm OPA the cryptocurrency genius, make a request and i will grant it...")

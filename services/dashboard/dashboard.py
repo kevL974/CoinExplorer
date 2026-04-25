@@ -1,8 +1,10 @@
+import logging
 import dash_bootstrap_components
 from dash import Dash, dcc, html, Input, Output, State
 from datetime import date, datetime
 from typing import List
 from io import StringIO
+from opa.logging_config import configure_logging
 from opa.process.technical_indicators import simple_mobile_average, exponential_mobile_average, \
     stochastic_relative_strength_index
 from plotly import graph_objects as go
@@ -11,6 +13,9 @@ import requests
 import pandas as pd
 import json
 import os
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 OPA_API_URL: str = os.getenv("OPA_API_URL")
 SMA_VALUE = 1
@@ -253,7 +258,7 @@ def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is
             gbl_df_candlesticks = pd.read_json(StringIO(response.json()), orient='index')
 
             if gbl_df_candlesticks.empty:
-                print("no data available")
+                logger.warning("No candlestick data available for the requested period")
                 return fig, not is_open
             else:
                 df = gbl_df_candlesticks.sort_index()
@@ -262,14 +267,12 @@ def display_candlestick(n_clicks, value: str, start_date: str, end_date: str, is
                 configure_figure(fig)
         else:
             if response.status_code == requests.codes.bad_request:
-                print("Erreur 400")
+                logger.error("API returned 400 Bad Request")
 
             elif response.status_code == requests.codes.unprocessable_entity:
-                print("Erreur 422")
-                print(response.text)
+                logger.error("API returned 422 Unprocessable Entity: %s", response.text)
             else:
-                print(f"erreur {response.status_code}")
-                print(response.content)
+                logger.error("API returned unexpected status %d: %s", response.status_code, response.content)
 
             return fig, not is_open
 

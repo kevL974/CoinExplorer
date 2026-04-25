@@ -1,10 +1,15 @@
 import asyncio
+import logging
 from kafka import KafkaConsumer
+from opa.logging_config import configure_logging
 from opa.storage.connector import KafkaConnector
 from opa.storage.repository import HbaseCrudRepository
 from opa.utils import *
 import argparse
 import json
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 
 def message_consummable(consumer: KafkaConsumer):
@@ -25,7 +30,7 @@ async def store_to_database(consumer: KafkaConsumer, output: HbaseCrudRepository
     """
 
     for msg in consumer:
-        print(msg.value)
+        logger.debug("Received message: %s", msg.value)
         candlestick = dict_to_candlesticks(json.loads(msg.value))
         async with lock:
             output.save(candlestick)

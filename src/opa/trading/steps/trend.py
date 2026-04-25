@@ -36,7 +36,7 @@ class CheckBullRunStep(BaseTradingStep):
             self.__nb_retries = 0
             if(sma_short.ndim > 0) and (len(sma_short) > 0):
                 if (sma_short[-1] > sma_long[-1]) and (rsi[-1] > 50.0).all:
-                    print(f"Check bull run : sma_short ({sma_short[-1]}) > sma_long ({sma_long[-1]} and rsi ({rsi[-1]})")
+                    logger.info("CheckBullRunStep: sma_short=%.4f > sma_long=%.4f, rsi=%.4f", sma_short[-1], sma_long[-1], rsi[-1])
                     self.on_success()
                 else:
                     #print(f"Check bull run : sma_short ({sma_short[-1]}) < sma_long ({sma_long[-1]} and rsi ({rsi[-1]})")
@@ -74,7 +74,7 @@ class ConvergingMovingAverages(BaseTradingStep):
             if not detect_convergence(sma_below,sma_above):
                 self.on_fail()
             else:
-                print("Convergence detected.")
+                logger.info("ConvergingMovingAverages: convergence detected")
                 self.on_success()
 
     def on_success(self) -> None:
@@ -98,7 +98,7 @@ class OversoldStochasticStep(BaseTradingStep):
             slowk, slowd = self.context.indicator_value(self._id_stoch)
 
             if np.all(slowd[-5:] < 20) and np.all(slowk[-5:] < 20):
-                print("Oversold Stochastic Indicator")
+                logger.info("OversoldStochasticStep: oversold condition detected")
                 self.on_success()
             else:
                 self.on_fail()

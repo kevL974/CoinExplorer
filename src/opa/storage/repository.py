@@ -1,7 +1,10 @@
+import logging
 from typing import List, Dict, Optional
 from opa.storage.model import HbaseEntity
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import happybase as hb
+
+logger = logging.getLogger(__name__)
 
 
 class HbaseCrudRepository:
@@ -221,4 +224,4 @@ class HbaseCrudRepository:
                 if self.table_name.encode("utf-8") not in list_tables:
                     con.create_table(self.table_name, schema)
         except IOError:
-            print("WARN tried to create table BINANCE whereas already created...")
+            logger.warning("Tried to create table %s but it already exists", self.table_name)

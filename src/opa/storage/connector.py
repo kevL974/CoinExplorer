@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, TypeVar, Optional
 from kafka import KafkaProducer, KafkaConsumer
@@ -6,6 +7,8 @@ from opa.storage.repository import HbaseCrudRepository, HbaseEntity
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import pandas as pd
 import happybase as hb
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -41,12 +44,12 @@ class CsvConnector(InputOutputStream):
         pass
 
     def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
-        print(candlesticks)
+        logger.debug("candlesticks: %s", candlesticks)
 
     def read(self, list_files_csv: str, symbols: str, intervals: str) -> List:
         list_hbase_full = []
         for path_file in list_files_csv:
-            print("Lecture du fichier: ", path_file)
+            logger.debug("Lecture du fichier: %s", path_file)
             csv = pd.read_csv(path_file, delimiter=",", header=None)
             cols = [1, 2, 3, 4, 5, 6]
             data = csv[cols]

@@ -8,3 +8,5 @@ data
 .~*.ipynb
 .ipynb
 *.egg-info
+.coverage
+htmlcov/

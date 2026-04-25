@@ -1,7 +1,10 @@
+import logging
 from typing import List, Dict, Tuple, Callable
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 from opa.harvest.ochlv_constant import *
 from opa.core.candlestick import Candlestick
 from zipfile import BadZipfile
@@ -69,7 +72,7 @@ async def csv_to_candlesticks(symbol: str, interval: str, csv_filepath: str) -> 
                                                 volume=float(row[5]),
                                                 close_time=int(row[6])))
     except FileNotFoundError:
-        print(f"CSV file \"{csv_filepath}\" not found")
+        logger.error("CSV file '%s' not found", csv_filepath)
 
     return candlesticks
 
@@ -102,7 +105,7 @@ async def list_file(directory_path: str, extension: str) -> List[str]:
         if (file.find(extension) >= 0) & (await isdir(file) == False):
             files.append(file)
         else:
-            print("file à ne pas dezipper:", file)
+            logger.debug("Skipping non-%s file: %s", extension, file)
     return files
 
 
@@ -117,7 +120,7 @@ async def dezip(zip_path: str) -> str:
     try:
         await unzip(zip_absolut_path,  join(dirname(zip_absolut_path), "extract"))
     except BadZipfile as e:
-        print(f"{e} : {zip_absolut_path}")
+        logger.error("%s : %s", e, zip_absolut_path)
 
     return join(dirname(zip_absolut_path), "extract", basename(zip_path).replace('zip', 'csv'))
 
@@ -154,7 +157,7 @@ def retry_connection_on_brokenpipe(max_retries: int = 5):
                 try:
                     return function(*args, **kwargs)
                 except BrokenPipeError:
-                    print(f"Try n°{retries+1} failed, retry...")
+                    logger.warning("Try n°%d failed, retry...", retries + 1)
                     retries += 1
             raise Exception("Maximum retries exceeded")
 
@@ -174,7 +177,7 @@ def retry_connection_on_ttransportexception(max_retries: int = 5):
                 try:
                     return function(*args, **kwargs)
                 except TTransportException:
-                    print(f"Try n°{retries+1} failed, retry...")
+                    logger.warning("Try n°%d failed, retry...", retries + 1)
                     retries += 1
             raise Exception("Maximum retries exceeded")
 
@@ -257,7 +260,8 @@ def detect_convergence(curve_below: np.ndarray, curve_above: np.ndarray, window:
 
     distance = np.abs(curve_below - curve_above)
     limit = distance[-1] <= 50
-    trend = np.all(np.diff(distance) <= 0); print(distance); print(np.diff(distance)); print(limit)
+    trend = np.all(np.diff(distance) <= 0)
+    logger.debug("detect_convergence: distance=%s, diff=%s, limit=%s", distance, np.diff(distance), limit)
     return limit and trend and is_below
 
 def detect_crossing(curve_below: np.ndarray, curve_above: np.ndarray) -> bool:
@@ -300,7 +304,7 @@ class TsQueue:
         self._timeseries.loc[pd.to_datetime(timestamp)]=value
 
         if self.size() > self._maxlen:
-            self._timeseries = self._timeseries.iloc[:200]
+            self._timeseries = self._timeseries.iloc[-self._maxlen:]
 
     def tolist(self) -> np.ndarray:
         """

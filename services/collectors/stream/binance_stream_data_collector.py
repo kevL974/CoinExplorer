@@ -2,10 +2,13 @@ import argparse
 import asyncio
 import os
 from binance import AsyncClient, BinanceSocketManager
+from opa.logging_config import configure_logging
 from opa.storage.connector import InputOutputStream, KafkaConnector
 from opa.utils import *
 from opa.util.binance.enums import *
 from typing import List
+
+configure_logging()
 
 API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
 API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")

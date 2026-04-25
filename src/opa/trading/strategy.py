@@ -95,5 +95,3 @@ class DayTradingStrategy(TradingStrategy):
         except StepError as e:
             logger.error(e.__str__())
 
-if __name__ == "__main__":
-    print("strategy")

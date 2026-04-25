@@ -17,7 +17,8 @@ class BreakingRsiNeutralLine(BaseTradingStep):
         try:
 
             rsi = self.context.indicator_value(self._id_rsi)
-            neutral_line = np.full_like(rsi, 50.0);print("i m in BreakingRsiNeutralLine")
+            neutral_line = np.full_like(rsi, 50.0)
+            logger.debug("BreakingRsiNeutralLine: checking RSI proximity to neutral line")
 
         except UnavailableData as e:
             logger.warning(e)
@@ -28,10 +29,10 @@ class BreakingRsiNeutralLine(BaseTradingStep):
             proximity = detect_proximity(rsi, neutral_line)[0]
 
             if proximity.size == 0:
-                print("BreakingRsiNeutralLine fails")
+                logger.debug("BreakingRsiNeutralLine: no proximity found, failing")
                 self.on_fail()
             else:
-                print(rsi)
+                logger.info("BreakingRsiNeutralLine: RSI near neutral line, succeeding")
                 self.on_success()
 
     def on_success(self) -> None:
@@ -58,18 +59,18 @@ class RetestSmaStep(BaseTradingStep):
             price_close = price["close"]
 
             rebounds = detect_rebound(price_close, sma, tolerance=0.002)[0]
-            print(f"price: {price_close[-1]} --- sma: {sma[-1]}")
+            logger.debug("RetestSmaStep: price=%.4f, sma=%.4f", price_close[-1], sma[-1])
 
             if rebounds.size == 0:
-                print(f"Rebound not found : {rebounds} ")
+                logger.debug("RetestSmaStep: no rebound found, failing")
                 self.on_fail()
 
-            else :
-                print(f"Rebound found : {rebounds.max()} !!! ")
+            else:
+                logger.info("RetestSmaStep: rebound found at index %d", rebounds.max())
                 self.on_success()
 
         except UnavailableData:
-            print(f"ReTestSmaStep - No price or sma value available")
+            logger.warning("RetestSmaStep: no price or sma value available")
             self.on_wait()
 
     def on_wait(self) -> None:
@@ -103,7 +104,7 @@ class PriceOnLowBollingerBdStep(BaseTradingStep):
             proximity = detect_proximity(price_close, low_bollinger_band)[0]
 
             if proximity.size == 0:
-                print("im in Bollinger bands checking")
+                logger.debug("PriceOnLowBollingerBdStep: price not near lower band, failing")
                 self.on_fail()
             else:
                 self.on_success()
@@ -130,10 +131,10 @@ class MacdCrossAboveSignalStep(BaseTradingStep):
             macd, signal, hist = self.context.indicator_value(self._id_macd)
 
             if detect_crossing(macd, signal):
-                print("macd crossed")
+                logger.info("MacdCrossAboveSignalStep: MACD crossed above signal")
                 self.on_success()
-            else :
-                print("macd crossed fail")
+            else:
+                logger.debug("MacdCrossAboveSignalStep: no MACD crossover detected, failing")
                 self.on_fail()
         except UnavailableData as e:
             logger.warning(e)
