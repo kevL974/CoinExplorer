@@ -7,9 +7,9 @@ COPY requirements.txt .
 
 RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
 
-ADD opa ./opa
+ADD src/opa ./opa
 
-ADD stream_to_hbase .
+ADD services/pipeline/hbase .
 
 ENTRYPOINT ["python3", "-um", "stream_to_hbase.py", "-d", "hbase:9090", "-k", "kafka:9092"]
 

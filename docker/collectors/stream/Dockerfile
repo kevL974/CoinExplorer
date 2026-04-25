@@ -14,9 +14,9 @@ COPY requirements.txt .
 
 RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
 
-ADD opa ./opa
+ADD src/opa ./opa
 
-ADD collect_stream_data .
+ADD services/collectors/stream .
 
 ENTRYPOINT ["python3", "binance_stream_data_collector.py", "-k", "kafka:9092"]
 

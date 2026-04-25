@@ -3,7 +3,7 @@ LABEL authors="OPA_Datascientest"
 
 WORKDIR /app
 
-ADD dashboard .
+ADD services/dashboard .
 
 RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
 

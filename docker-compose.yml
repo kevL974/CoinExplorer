@@ -85,7 +85,7 @@ services:
     image: opa_collect_historic_data:latest
     build:
       context: .
-      dockerfile: docker/collect_historic_data/Dockerfile
+      dockerfile: docker/collectors/historic/Dockerfile
     command: -s BTCUSDT ETHUSDT -i 15m 30m
     networks:
       - opa_network
@@ -98,11 +98,11 @@ services:
     image: opa_collect_stream_data:latest
     build:
       context: .
-      dockerfile: docker/collect_stream_data/Dockerfile
+      dockerfile: docker/collectors/stream/Dockerfile
       args:
         - API_KEY
         - API_SECRET
-    command: -s BTCUSDT ETHUSDT -i 5m 15m 1h 4h
+    command: -s ETHUSDT -i 5m 15m 1h 4h
     networks:
       - opa_network
     depends_on:
@@ -114,7 +114,7 @@ services:
     image: opa_streaming:latest
     build:
       context: .
-      dockerfile: docker/stream_to_hbase/Dockerfile
+      dockerfile: docker/pipeline/hbase/Dockerfile
     command: -t BTCUSDT ETHUSDT
     networks:
       - opa_network
