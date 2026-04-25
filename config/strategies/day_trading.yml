@@ -1,0 +1,41 @@
+strategy:
+  name: day_trading
+  price_history_size: 200
+  steps:
+    - step: CheckBullRun
+      sma_short: {tunit: 5m, period: 20}
+      sma_long:  {tunit: 5m, period: 50}
+      rsi:       {tunit: 5m, period: 14}
+
+    - step: RetestSma
+      tunit: 15m
+      sma: {period: 100}
+
+    - step: LowerBollingerBandBreach
+      tunit: 5m
+      bollinger: {period: 20, nbdevup: 2, nbdevdn: 2, matype: 0}
+
+    - step: SmaConvergence
+      tunit: 15m
+      sma_below: {period: 20}
+      sma_above: {period: 50}
+
+    - step: RsiBreakNeutralLine
+      tunit: 5m
+      rsi: {period: 14}
+
+    - step: MacdCrossAboveSignal
+      tunit: 4h
+      macd: {fastperiod: 12, slowperiod: 26, signalperiod: 9}
+
+    - step: OversoldStochastic
+      tunit: 4h
+      stochastic: {fastk_period: 12, slowk_period: 3, slowk_matype: 0, slowd_period: 3, slowd_matype: 0}
+
+    - step: OversoldStochastic
+      tunit: 1h
+      stochastic: {fastk_period: 12, slowk_period: 3, slowk_matype: 0, slowd_period: 3, slowd_matype: 0}
+
+    - step: OversoldStochastic
+      tunit: 15m
+      stochastic: {fastk_period: 12, slowk_period: 3, slowk_matype: 0, slowd_period: 3, slowd_matype: 0}

@@ -1,3 +1,4 @@
+from opa.trading.config import apply_config
 from opa.trading.indicator.bollinger import BollingerBdIndicator
 from opa.trading.indicator.macd import MACDIndicator
 from opa.trading.indicator.rsi import RsiIndicator
@@ -68,27 +69,17 @@ class Director:
     def builder(self, builder: Builder) -> None:
         self._builder = builder
 
-    def make_day_trading_strategy(self) -> None:
-        t_4h = "4h"
-        t_1h = "1h"
-        t_15m = "15m"
-        t_5m = "5m"
-
-        self._builder.set_checking_bullrun(t_5m, SmaIndicator(t_5m, 20), SmaIndicator(t_5m, 50), RsiIndicator(t_5m, 14))
-        self._builder.set_checking_retest_sma(t_15m, SmaIndicator(t_15m, 100))
-        self._builder.set_checking_lower_bollinger_band_breach(t_5m, BollingerBdIndicator(t_5m))
-        self._builder.set_checking_sma_convergence(t_15m, SmaIndicator(t_15m, 20), SmaIndicator(t_15m, 50))
-        self._builder.set_checking_rsi_break_through_neutral_line(t_5m, RsiIndicator(t_5m, 14))
-        self._builder.set_checking_macd_cross_above_signal(t_4h, MACDIndicator(t_4h, 12, 26, 9))
-        self._builder.set_checking_oversold_stochastic(t_4h, StochasticIndicator(t_4h, 12, 3, 0, 3, 0))
-        self._builder.set_checking_oversold_stochastic(t_1h, StochasticIndicator(t_1h, 12, 3, 0, 3, 0))
-        self._builder.set_checking_oversold_stochastic(t_15m, StochasticIndicator(t_15m, 12, 3, 0, 3, 0))
+    def make_day_trading_strategy(
+        self, config_path: str = "config/strategies/day_trading.yml"
+    ) -> None:
+        apply_config(config_path, self._builder)
 
 
 class EnvironmentSetBuilder(Builder):
 
-    def __init__(self) -> None:
+    def __init__(self, price_history_size: int = 200) -> None:
         super().__init__()
+        self._price_history_size = price_history_size
         self._product: Environment = None
         self.reset()
 
@@ -120,7 +111,7 @@ class EnvironmentSetBuilder(Builder):
         pass
 
     def reset(self) -> None:
-        self._product = Environment()
+        self._product = Environment(self._price_history_size)
 
     @property
     def product(self) -> Environment:

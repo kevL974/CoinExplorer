@@ -17,6 +17,7 @@ dependencies = [
     "aiocsv",
     "async_unzip",
     "tqdm",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]

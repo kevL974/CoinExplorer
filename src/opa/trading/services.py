@@ -9,11 +9,10 @@ from opa.utils import TsQueue
 
 
 class Environment:
-    __MAXSIZE: int = 200
 
-    def __init__(self):
-        self.indicators_manager: IndicatorManager = IndicatorManager(Environment.__MAXSIZE)
-        self.price_manager: PriceManager = PriceManager(Environment.__MAXSIZE)
+    def __init__(self, price_history_size: int = 200) -> None:
+        self.indicators_manager: IndicatorManager = IndicatorManager(price_history_size)
+        self.price_manager: PriceManager = PriceManager(price_history_size)
 
     def put(self, candlestick: Candlestick) -> None:
         """

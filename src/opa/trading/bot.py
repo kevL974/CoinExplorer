@@ -1,4 +1,5 @@
 from opa.trading.builder import Director, EnvironmentSetBuilder, TradingStepBuilder
+from opa.trading.config import get_price_history_size
 from opa.trading.strategy import *
 from opa.trading.indicator.base import *
 from opa.core.candlestick import Candlestick
@@ -52,11 +53,15 @@ if __name__ == "__main__":
                         required=True)
 
     parser.add_argument('--backtest', help='Backtesting mode', action='store_true')
+    parser.add_argument('--strategy-config',
+                        default='config/strategies/day_trading.yml',
+                        help='Path to strategy YAML config file')
 
     args = parser.parse_args()
 
     topic = args.topic
     kafka_host, kafka_port = parse_connection_settings(args.kafka)
+    config_path = args.strategy_config
 
     input_kafka = KafkaConnector(bootstrapservers=args.kafka, clientid="opa_bot_consumor")
     kafka_consumers = input_kafka.read(topics=topic, mode=KafkaConnector.ONE_CONS_TO_ALL_TOPICS)
@@ -64,11 +69,11 @@ if __name__ == "__main__":
     director = Director()
 
     director.builder = TradingStepBuilder()
-    director.make_day_trading_strategy()
+    director.make_day_trading_strategy(config_path)
     steps = director.builder.product
 
-    director.builder = EnvironmentSetBuilder()
-    director.make_day_trading_strategy()
+    director.builder = EnvironmentSetBuilder(get_price_history_size(config_path))
+    director.make_day_trading_strategy(config_path)
     environment = director.builder.product
 
     bot = TradingBot(DayTradingStrategy(steps, environment))
