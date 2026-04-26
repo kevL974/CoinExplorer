@@ -1,0 +1,38 @@
+name: ci
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - run: pip install ruff
+      - run: ruff check src/ tests/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - name: Cache talib_compilation
+        id: cache-talib
+        uses: actions/cache@v5
+        with:
+          path: |
+            /usr/lib/libta_lib* 
+            /usr/include/ta-lib
+          key: ${{ runner.os }}-talib
+      - if: steps.cache-talib.outputs.cache-hit != 'true'
+        run: sh install_talib.sh
+      - run: pip install -e '.[dev]'
+      - run: pytest --cov --cov-report=term-missing
