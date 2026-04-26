@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from opa.trading.strategy import TradingStrategy
+if TYPE_CHECKING:
+    from opa.trading.strategy import TradingStrategy
 
 import logging
 
