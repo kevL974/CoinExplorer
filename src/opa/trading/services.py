@@ -34,7 +34,7 @@ class Environment:
             return indicator_value
 
     def price_value(self, tunit: str) -> Dict[str, float]:
-        return self.price_manager.earliest_price(tunit)
+        return self.price_manager.latest_price(tunit)
 
     def price_history(self, tunit: str) -> Dict[str, np.ndarray]:
         try:
@@ -94,13 +94,13 @@ class PriceManager:
 
         return prices
 
-    def earliest_price(self, tunit: str) -> Dict[str,float]:
+    def latest_price(self, tunit: str) -> Dict[str, float]:
         prices = {}
         if self.exist(tunit):
             prices = {
                 "close": self._closes[tunit].earliest_value(),
-                "highs": self._highs[tunit].earliest_value(),
-                "lows": self._lows[tunit].earliest_value()
+                "high":  self._highs[tunit].earliest_value(),
+                "low":   self._lows[tunit].earliest_value()
             }
         return prices
 

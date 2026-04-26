@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 api       = ["fastapi", "httptools==0.1.*", "uvloop", "uvicorn"]
 dashboard = ["dash", "requests", "dash_bootstrap_components"]
-dev       = ["pytest", "pytest-asyncio", "pytest-cov"]
+dev       = ["pytest", "pytest-asyncio", "pytest-cov", "pyarrow"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

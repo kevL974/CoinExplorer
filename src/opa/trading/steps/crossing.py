@@ -93,7 +93,7 @@ class PriceOnLowBollingerBdStep(BaseTradingStep):
         tunit = str.split(self._id_bbollinger, "-")[0]
 
         try:
-            low_bollinger_band = self.context.indicator_value(self._id_bbollinger)[1]
+            low_bollinger_band = self.context.indicator_value(self._id_bbollinger)[2]
             price = self.context.price_history(tunit)
             price_close = price["close"]
         except UnavailableData as e:

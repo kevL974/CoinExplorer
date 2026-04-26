@@ -1,7 +1,8 @@
 from opa.trading.builder import Director, EnvironmentSetBuilder, TradingStepBuilder
 from opa.trading.config import get_price_history_size
-from opa.trading.strategy import *
+from opa.trading.strategy import TradingStrategy, DayTradingStrategy
 from opa.core.candlestick import Candlestick
+from typing import Dict
 from opa.utils import parse_connection_settings, dict_to_candlesticks
 from opa.storage.connector import KafkaConnector
 from opa.logging_config import configure_logging
@@ -78,5 +79,4 @@ if __name__ == "__main__":
     environment = director.builder.product
 
     bot = TradingBot(DayTradingStrategy(steps, environment))
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(trade(consumers=kafka_consumers, bot=bot))
+    asyncio.run(trade(consumers=kafka_consumers, bot=bot))
