@@ -35,7 +35,7 @@ class CheckBullRunStep(BaseTradingStep):
         else:
             self.__nb_retries = 0
             if(sma_short.ndim > 0) and (len(sma_short) > 0):
-                if (sma_short[-1] > sma_long[-1]) and (rsi[-1] > 50.0).all:
+                if (sma_short[-1] > sma_long[-1]) and (rsi[-1] > 50.0):
                     logger.info("CheckBullRunStep: sma_short=%.4f > sma_long=%.4f, rsi=%.4f", sma_short[-1], sma_long[-1], rsi[-1])
                     self.on_success()
                 else:

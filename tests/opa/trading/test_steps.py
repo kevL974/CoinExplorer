@@ -62,6 +62,23 @@ class TestCheckBullRunStep:
         strategy, init, terminal = run_step(step, env)
         assert strategy._step is init  # on_fail() → reset to initial
 
+    def test_fail_when_bull_sma_but_rsi_below_50(self):
+        """sma_short > sma_long (rebond récent) mais RSI < 50 (déclin en cours) → doit échouer."""
+        # flat(150) → hausse 100→200(30) → baisse 200→180(20)
+        # sma_short(20) ≈ 190 > sma_long(50) ≈ 166, mais RSI ≈ 0 après 20 bougies baissières
+        closes = np.concatenate([
+            np.full(150, 100.0),
+            np.linspace(100.0, 200.0, 30),
+            np.linspace(200.0, 180.0, 20),
+        ])
+        env = make_env(
+            [SmaIndicator("5m", 20), SmaIndicator("5m", 50), RsiIndicator("5m", 14)],
+            closes,
+        )
+        step = CheckBullRunStep(SMA_SHORT_ID, SMA_LONG_ID, RSI_ID)
+        strategy, init, terminal = run_step(step, env)
+        assert strategy._step is init  # rsi < 50 → on_fail()
+
 
 class TestBreakingRsiNeutralLine:
 

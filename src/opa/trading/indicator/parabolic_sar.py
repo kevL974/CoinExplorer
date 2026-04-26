@@ -16,7 +16,7 @@ class ParabolicSARIndicator(BaseIndicator):
         self._maximum: float = maximum
 
     def value(self, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray) -> np.ndarray:
-        return talib.SAR(highs, lows, acceleration=0.02, maximum=0.2)
+        return talib.SAR(highs, lows, acceleration=self._acceleration, maximum=self._maximum)
 
     def get_parameters(self) -> str:
         return f"{str(self._acceleration)}#{str(self._maximum)}"
