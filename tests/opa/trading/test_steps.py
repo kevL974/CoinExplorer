@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from opa.core.candlestick import Candlestick
 from opa.trading.services import Environment

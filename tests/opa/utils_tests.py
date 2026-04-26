@@ -1,9 +1,9 @@
-import numpy as np
-
-from opa.utils import *
+from opa.utils import csv_to_candlesticks, TsQueue
 from datetime import datetime
 import pytest
 import os
+import numpy as np
+import pandas as pd
 
 
 @pytest.mark.asyncio
@@ -62,7 +62,7 @@ def test_tsqueue_push():
     value = 12
     tsQueue.push(ts, value)
 
-    f""" size must be equals to 1 after push """
+    """ size must be equals to 1 after push """
     assert tsQueue.size() == 1
 
     ts_values = zip([i for i in range(201)],[datetime.now().timestamp()+i for i in range(201)])
@@ -70,7 +70,7 @@ def test_tsqueue_push():
     for x in ts_values:
         tsQueue.push(x[0],x[1])
 
-    f""" size must be equals to 200 after 201 push """
+    """ size must be equals to 200 after 201 push """
     assert tsQueue.size() == 200
 
 def test_tsqueue_tolist():
@@ -85,7 +85,7 @@ def test_tsqueue_tolist():
     result=np.array([[pd.to_datetime(ts_0), value_0], [pd.to_datetime(ts_1), value_1]])
 
     f""" tsQueue.tolist() {tsQueue.tolist().__str__()} must be equals to result {result}"""
-    assert np.array_equal(tsQueue.tolist(), result) == True
+    assert np.array_equal(tsQueue.tolist(), result)
 
 def test_tsqueue_earliest_entry():
     tsQueue = TsQueue(200)
@@ -100,7 +100,7 @@ def test_tsqueue_earliest_entry():
     result = np.array([pd.to_datetime(earliest_ts), earliest_value])
 
     f""" tsQueue.tolist() {tsQueue.earliest_entry().__str__()} must be equals to result {result}"""
-    assert np.array_equal(tsQueue.earliest_entry(), result) == True
+    assert np.array_equal(tsQueue.earliest_entry(), result)
 
 def test_tsqueue_earliest_value():
     tsQueue = TsQueue(200)
@@ -140,7 +140,7 @@ def test_tsqueue_earliest_n_entry():
     result = np.array([[pd.to_datetime(ts_serie[15]), value_serie[15]],[pd.to_datetime(ts_serie[16]), value_serie[16]],[pd.to_datetime(ts_serie[17]), value_serie[17]]])
 
     f""" tsQueue.tolist() {tsQueue.get_n_earliest_entry(3).__str__()} must be equals to result {result}"""
-    assert np.array_equal(tsQueue.get_n_earliest_entry(3), result) == True
+    assert np.array_equal(tsQueue.get_n_earliest_entry(3), result)
 
 def test_tsqueue_values():
     tsQueue = TsQueue(20)
@@ -155,4 +155,4 @@ def test_tsqueue_values():
     expected = values
 
     f"""TsQueue.values() must be equals to expected {expected}"""
-    assert np.array_equal(tsQueue.values(), expected) == True
+    assert np.array_equal(tsQueue.values(), expected)

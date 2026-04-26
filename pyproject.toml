@@ -50,3 +50,16 @@ omit = [
 [tool.coverage.report]
 fail_under = 60
 show_missing = true
+
+[tool.ruff]
+exclude = [
+    "src/opa/storage/",
+    "src/opa/harvest/",
+    "src/opa/trading/bot.py",
+    "src/opa/trading/builder.py",
+    "src/opa/trading/wallet.py",
+    "src/opa/trading/signal.py",
+    "src/opa/process/exponential_moving_averages.py",
+    "src/opa/logging_config.py",
+    "src/opa/util/binance/enums.py"
+]

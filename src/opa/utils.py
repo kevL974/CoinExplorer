@@ -1,11 +1,6 @@
-import logging
 from typing import List, Dict, Tuple, Callable
-
-import numpy as np
-import pandas as pd
-
-logger = logging.getLogger(__name__)
-from opa.harvest.ochlv_constant import *
+from opa.harvest.ochlv_constant import IDX_OPEN, IDX_CLOSE, IDX_HIGHT, IDX_LOW, IDX_VOLUME, IDX_CLOSE_TIME, KEY_SYMBOL, \
+    KEY_CLOSE, KEY_OPEN, KEY_HIGHT, KEY_LOW, KEY_VOLUME, KEY_CLOSE_TIME
 from opa.core.candlestick import Candlestick
 from zipfile import BadZipfile
 from async_unzip.unzipper import unzip
@@ -15,6 +10,12 @@ from aiofiles.os import listdir
 from aiofiles.ospath import isdir
 from aiofiles import open as aio_open
 import aiocsv
+
+import logging
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def hist_klines_websocket_to_candlestick(symbol: str, interval: str, klines: List[str]) -> Candlestick:
@@ -102,7 +103,7 @@ async def list_file(directory_path: str, extension: str) -> List[str]:
     files = []
     all_files_in_directory = await listdir(directory_path)
     for file in all_files_in_directory:
-        if (file.find(extension) >= 0) & (await isdir(file) == False):
+        if (file.find(extension) >= 0) & (not await isdir(file)):
             files.append(file)
         else:
             logger.debug("Skipping non-%s file: %s", extension, file)

@@ -29,7 +29,7 @@ class CheckBullRunStep(BaseTradingStep):
                 self.__nb_retries += 1
                 self.on_wait()
             else:
-                msg = f"Can not checking condition cause indicators have issue."
+                msg = "Can not checking condition cause indicators have issue."
                 logger.error(msg)
                 raise StepError(msg) from e
         else:
