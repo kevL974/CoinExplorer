@@ -1,10 +1,10 @@
 from opa.trading.builder import Director, EnvironmentSetBuilder, TradingStepBuilder
 from opa.trading.config import get_price_history_size
 from opa.trading.strategy import *
-from opa.trading.indicator.base import *
 from opa.core.candlestick import Candlestick
 from opa.utils import parse_connection_settings, dict_to_candlesticks
 from opa.storage.connector import KafkaConnector
+from opa.logging_config import configure_logging
 from kafka import KafkaConsumer
 import argparse
 import asyncio
@@ -42,6 +42,7 @@ async def trade(consumers: Dict[str, KafkaConsumer], bot: TradingBot) -> None:
 
 
 if __name__ == "__main__":
+    configure_logging()
     parser = argparse.ArgumentParser(description='Start trading with a bot')
     parser.add_argument('-t', '--topic',
                         help='Topic where are price data : -t  <topic>',
