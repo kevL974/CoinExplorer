@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 
 from opa.core.candlestick import Candlestick
-from opa.trading.services import Environment
-from opa.trading.indicator.sma import SmaIndicator
-from opa.trading.indicator.rsi import RsiIndicator
-from opa.trading.indicator.macd import MACDIndicator
 from opa.trading.indicator.bollinger import BollingerBdIndicator
+from opa.trading.indicator.macd import MACDIndicator
+from opa.trading.indicator.rsi import RsiIndicator
+from opa.trading.indicator.sma import SmaIndicator
 from opa.trading.indicator.stochastic import StochasticIndicator
+from opa.trading.services import Environment
 from opa.trading.steps.base import BaseTradingStep
 
 

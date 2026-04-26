@@ -1,19 +1,33 @@
-from typing import List, Dict, Tuple, Callable
-from opa.harvest.ochlv_constant import IDX_OPEN, IDX_CLOSE, IDX_HIGHT, IDX_LOW, IDX_VOLUME, IDX_CLOSE_TIME, KEY_SYMBOL, \
-    KEY_CLOSE, KEY_OPEN, KEY_HIGHT, KEY_LOW, KEY_VOLUME, KEY_CLOSE_TIME
-from opa.core.candlestick import Candlestick
-from zipfile import BadZipfile
-from async_unzip.unzipper import unzip
-from os.path import join, realpath, dirname, basename
-from thriftpy2.transport.base import TTransportException
-from aiofiles.os import listdir
-from aiofiles.ospath import isdir
-from aiofiles import open as aio_open
-import aiocsv
-
 import logging
+from os.path import basename, dirname, join, realpath
+from typing import Callable, Dict, List, Tuple
+from zipfile import BadZipfile
+
+import aiocsv
 import numpy as np
 import pandas as pd
+from aiofiles import open as aio_open
+from aiofiles.os import listdir
+from aiofiles.ospath import isdir
+from async_unzip.unzipper import unzip
+from thriftpy2.transport.base import TTransportException
+
+from opa.core.candlestick import Candlestick
+from opa.harvest.ochlv_constant import (
+    IDX_CLOSE,
+    IDX_CLOSE_TIME,
+    IDX_HIGHT,
+    IDX_LOW,
+    IDX_OPEN,
+    IDX_VOLUME,
+    KEY_CLOSE,
+    KEY_CLOSE_TIME,
+    KEY_HIGHT,
+    KEY_LOW,
+    KEY_OPEN,
+    KEY_SYMBOL,
+    KEY_VOLUME,
+)
 
 logger = logging.getLogger(__name__)
 

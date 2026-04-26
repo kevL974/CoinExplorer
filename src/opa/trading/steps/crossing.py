@@ -4,7 +4,7 @@ import numpy as np
 
 from opa.AppException import UnavailableData
 from opa.trading.steps.base import BaseTradingStep, logger
-from opa.utils import detect_proximity, detect_rebound, detect_crossing
+from opa.utils import detect_crossing, detect_proximity, detect_rebound
 
 
 class BreakingRsiNeutralLine(BaseTradingStep):

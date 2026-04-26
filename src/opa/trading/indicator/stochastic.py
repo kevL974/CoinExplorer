@@ -1,5 +1,5 @@
-import talib
 import numpy as np
+import talib
 
 from opa.trading.indicator.base import BaseIndicator
 

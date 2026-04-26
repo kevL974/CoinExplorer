@@ -1,7 +1,8 @@
 import logging
-from talib import stream
-import numpy as np
 from typing import List, Tuple
+
+import numpy as np
+from talib import stream
 
 logger = logging.getLogger(__name__)
 

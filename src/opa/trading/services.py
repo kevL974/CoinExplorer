@@ -2,7 +2,7 @@ from typing import Dict
 
 import numpy as np
 
-from opa.AppException import UnavailablePriceData, UnavailableIndicatorData
+from opa.AppException import UnavailableIndicatorData, UnavailablePriceData
 from opa.core.candlestick import Candlestick
 from opa.trading.indicator.base import BaseIndicator, logger
 from opa.utils import TsQueue
@@ -148,10 +148,10 @@ class IndicatorManager:
         param = str.split(parameters[1], "_")[2]
         try:
             indicator = self._indicators[tunit][name][param]
-        except KeyError:
+        except KeyError as e:
             msg = f"Unavailable indicator data - id: {id_indicator} - tunit:{tunit} - name:{name} - param: {param} "
             logger.warning(msg)
-            raise UnavailableIndicatorData
+            raise UnavailableIndicatorData from e
 
         try:
             tunit_price = price_manager.history(tunit)

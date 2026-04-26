@@ -1,20 +1,22 @@
 import numpy as np
 
 from opa.core.candlestick import Candlestick
-from opa.trading.services import Environment
-from opa.trading.strategy import DayTradingStrategy
-from opa.trading.steps.base import InitStep, BaseTradingStep
-from opa.trading.steps.crossing import (
-    BreakingRsiNeutralLine, RetestSmaStep, PriceOnLowBollingerBdStep, MacdCrossAboveSignalStep
-)
-from opa.trading.steps.trend import CheckBullRunStep, OversoldStochasticStep
 from opa.trading.indicator.bollinger import BollingerBdIndicator
 from opa.trading.indicator.macd import MACDIndicator
 from opa.trading.indicator.rsi import RsiIndicator
 from opa.trading.indicator.sma import SmaIndicator
 from opa.trading.indicator.stochastic import StochasticIndicator
+from opa.trading.services import Environment
+from opa.trading.steps.base import BaseTradingStep, InitStep
+from opa.trading.steps.crossing import (
+    BreakingRsiNeutralLine,
+    MacdCrossAboveSignalStep,
+    PriceOnLowBollingerBdStep,
+    RetestSmaStep,
+)
+from opa.trading.steps.trend import CheckBullRunStep, OversoldStochasticStep
+from opa.trading.strategy import DayTradingStrategy
 from tests.conftest import TerminalStep, fill_environment
-
 
 SMA_SHORT_ID = "5m-5m_SMA_20"
 SMA_LONG_ID  = "5m-5m_SMA_50"

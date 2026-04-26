@@ -1,9 +1,11 @@
-from opa.utils import csv_to_candlesticks, TsQueue
-from datetime import datetime
-import pytest
 import os
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
+import pytest
+
+from opa.utils import TsQueue, csv_to_candlesticks
 
 
 @pytest.mark.asyncio
@@ -65,7 +67,7 @@ def test_tsqueue_push():
     """ size must be equals to 1 after push """
     assert tsQueue.size() == 1
 
-    ts_values = zip([i for i in range(201)],[datetime.now().timestamp()+i for i in range(201)])
+    ts_values = zip([i for i in range(201)],[datetime.now().timestamp()+i for i in range(201)], strict=True)
 
     for x in ts_values:
         tsQueue.push(x[0],x[1])
@@ -132,7 +134,7 @@ def test_tsqueue_earliest_n_entry():
     tsQueue = TsQueue(15)
     ts_serie = [datetime.now().timestamp() + i for i in range(18)]
     value_serie = [i for i in range(18)]
-    ts_values = zip(ts_serie, value_serie)
+    ts_values = zip(ts_serie, value_serie, strict=True)
 
     for ts, value in ts_values:
         tsQueue.push(ts, value)
@@ -147,7 +149,7 @@ def test_tsqueue_values():
     values = 30000 + np.cumsum(np.random.normal(2, 10, 20))
     dates = pd.date_range(start="2024-01-01", periods=20, freq="4h").to_numpy()
 
-    ts_values = zip(dates, values)
+    ts_values = zip(dates, values, strict=True)
 
     for ts, value in ts_values:
         tsQueue.push(ts, value)

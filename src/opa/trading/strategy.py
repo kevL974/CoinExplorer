@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from opa.core.candlestick import Candlestick
-from opa.trading.services import Environment
-from opa.trading.steps.base import BaseTradingStep
-from opa.AppException import StepError, UnavailableIndicatorData, UnavailablePriceData
+import logging
 from abc import ABC, abstractmethod
 from typing import Dict
 
 import numpy as np
-import logging
+
+from opa.AppException import StepError, UnavailableIndicatorData, UnavailablePriceData
+from opa.core.candlestick import Candlestick
+from opa.trading.services import Environment
+from opa.trading.steps.base import BaseTradingStep
+
 logger = logging.getLogger(__name__)
 
 class TradingStrategy(ABC):

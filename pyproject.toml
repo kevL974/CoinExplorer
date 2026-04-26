@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 api       = ["fastapi", "httptools==0.1.*", "uvloop", "uvicorn"]
 dashboard = ["dash", "requests", "dash_bootstrap_components"]
-dev       = ["pytest", "pytest-asyncio", "pytest-cov", "pyarrow"]
+dev       = ["pytest", "pytest-asyncio", "pytest-cov", "pyarrow", "ruff"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -63,3 +63,7 @@ exclude = [
     "src/opa/logging_config.py",
     "src/opa/util/binance/enums.py"
 ]
+
+[tool.ruff.lint]
+select = ["F", "E","I", "B"]
+ignore = ["E501"]

@@ -1,6 +1,11 @@
-from opa.process.technical_indicators import simple_mobile_average, exponential_mobile_average
 from typing import List
+
 import numpy as np
+
+from opa.process.technical_indicators import (
+    exponential_mobile_average,
+    simple_mobile_average,
+)
 
 
 def format_lists_comparaison(l1: List, l2: List) -> str:

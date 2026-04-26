@@ -1,7 +1,8 @@
 import datetime
 import json
-from opa.storage.model import HbaseEntity
 from typing import Dict
+
+from opa.storage.model import HbaseEntity
 
 
 class Candlestick(HbaseEntity):
