@@ -1,15 +1,15 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 LABEL authors="OPA_Datascientest"
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY pyproject.toml .
 
-RUN apk update && apk add build-base && pip3 install --upgrade pip && pip3 install --no-cache-dir -r requirements.txt
+COPY src/opa ./opa
 
-ADD src/opa ./opa
+RUN apt-get update && apt-get install -y build-essential && pip install '.'
 
-ADD services/collectors/historic .
+COPY services/collectors/historic .
 
 ENTRYPOINT ["python3", "binance_historic_data_collector.py", "-d", "hbase:9090"]
 

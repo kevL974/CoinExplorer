@@ -1,12 +1,14 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 LABEL authors="OPA_Datascientest"
 
 WORKDIR /app
 
-ADD services/dashboard .
+COPY pyproject.toml .
 
-RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
+COPY src/opa ./opa
 
-expose 5000
+RUN apt-get update && apt-get install -y build-essential && pip install '.[dashboard]'
+
+EXPOSE 5000
 
 CMD ["python3", "dashboard.py"]

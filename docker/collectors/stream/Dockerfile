@@ -1,4 +1,4 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 LABEL authors="OPA_Datascientest"
 
 ARG API_KEY
@@ -7,16 +7,15 @@ ARG API_SECRET
 ENV API_KEY_BINANCE_TESTNET=$API_KEY
 ENV API_KEY_SECRET_BINANCE_TESTNET=$API_SECRET
 
-RUN echo ${API_KEY_BINANCE_TESTNET}
 WORKDIR /app
 
-COPY requirements.txt .
+COPY pyproject.toml .
 
-RUN apk update && apk add build-base && pip3 install --no-cache-dir -r requirements.txt
+COPY src/opa ./opa
 
-ADD src/opa ./opa
+RUN apt-get update && apt-get install -y build-essential && pip install '.'
 
-ADD services/collectors/stream .
+COPY services/collectors/stream .
 
 ENTRYPOINT ["python3", "binance_stream_data_collector.py", "-k", "kafka:9092"]
 
