@@ -10,8 +10,8 @@ from typing import List
 
 configure_logging()
 
-API_KEY = os.getenv("API_KEY_BINANCE_TESTNET")
-API_SECRET = os.getenv("API_KEY_SECRET_BINANCE_TESTNET")
+API_KEY = os.getenv("API_KEY")
+API_SECRET = os.getenv("API_SECRET")
 
 
 async def get_missing_data(client: AsyncClient, symbol: str, interval: str, output: InputOutputStream,

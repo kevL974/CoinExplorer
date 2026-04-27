@@ -99,9 +99,9 @@ services:
     build:
       context: .
       dockerfile: docker/collectors/stream/Dockerfile
-      args:
-        - API_KEY
-        - API_SECRET
+    environment:
+      - API_KEY
+      - API_SECRET
     command: -s ETHUSDT -i 5m 15m 1h 4h
     networks:
       - opa_network

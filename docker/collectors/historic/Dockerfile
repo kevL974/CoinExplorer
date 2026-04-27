@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY pyproject.toml .
 
-COPY src/opa ./opa
+COPY src/opa ./src/opa
 
 RUN apt-get update && apt-get install -y build-essential && pip install '.'
 
