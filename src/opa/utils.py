@@ -40,12 +40,12 @@ def hist_klines_websocket_to_candlestick(symbol: str, interval: str, klines: Lis
     :return: c
     """
     return Candlestick(symbol, interval,
-                       open_price=klines[IDX_OPEN],
-                       close_price=klines[IDX_CLOSE],
-                       high=klines[IDX_HIGHT],
-                       low=klines[IDX_LOW],
-                       volume=klines[IDX_VOLUME],
-                       close_time=klines[IDX_CLOSE_TIME])
+                       open_price=float(klines[IDX_OPEN]),
+                       close_price=float(klines[IDX_CLOSE]),
+                       high=float(klines[IDX_HIGHT]),
+                       low=float(klines[IDX_LOW]),
+                       volume=float(klines[IDX_VOLUME]),
+                       close_time=int(klines[IDX_CLOSE_TIME]))
 
 
 def stream_klines_to_candlestick(interval, klines: Dict) -> Candlestick:
@@ -277,7 +277,7 @@ def detect_convergence(curve_below: np.ndarray, curve_above: np.ndarray, window:
     limit = distance[-1] <= 50
     trend = np.all(np.diff(distance) <= 0)
     logger.debug("detect_convergence: distance=%s, diff=%s, limit=%s", distance, np.diff(distance), limit)
-    return limit and trend and is_below
+    return bool(limit and trend and is_below)
 
 def detect_crossing(curve_below: np.ndarray, curve_above: np.ndarray) -> bool:
     if len(curve_below) != len(curve_above):

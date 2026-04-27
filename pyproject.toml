@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 api       = ["fastapi", "httptools==0.1.*", "uvloop", "uvicorn"]
 dashboard = ["dash", "requests", "dash_bootstrap_components"]
-dev       = ["pytest", "pytest-asyncio", "pytest-cov", "pyarrow", "ruff"]
+dev       = ["pytest", "pytest-asyncio", "pytest-cov", "pyarrow", "ruff", "mypy", "types-aiofiles", "types-PyYAML"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -67,3 +67,17 @@ exclude = [
 [tool.ruff.lint]
 select = ["F", "E","I", "B"]
 ignore = ["E501"]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [
+    "src/opa/storage/.*",
+    "src/opa/harvest/.*",
+    "src/opa/trading/bot.py",
+    "src/opa/trading/builder.py",
+    "src/opa/trading/wallet.py",
+    "src/opa/trading/signal.py",
+    "src/opa/process/exponential_moving_averages.py",
+    "src/opa/logging_config.py",
+    "src/opa/util/binance/enums.py"
+]

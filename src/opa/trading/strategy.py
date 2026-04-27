@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -27,7 +27,7 @@ class TradingStrategy(ABC):
         pass
 
     @abstractmethod
-    def price_value(self, tunit: str) -> Dict[str, np.ndarray]:
+    def price_value(self, tunit: str) -> Dict[str, float]:
         pass
 
     @abstractmethod
@@ -51,7 +51,7 @@ class DayTradingStrategy(TradingStrategy):
 
     def __init__(self, step: BaseTradingStep, environment: Environment) -> None:
         super().__init__(step, environment)
-        self._step = None
+        self._step: Optional[BaseTradingStep] = None
         self.first_step()
 
     def on_receiving_candlestick(self, candlestick: Candlestick) -> None:

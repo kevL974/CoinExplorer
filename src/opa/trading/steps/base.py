@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from opa.trading.strategy import TradingStrategy
@@ -14,19 +14,23 @@ logger = logging.getLogger(__name__)
 class BaseTradingStep(ABC):
 
     def __init__(self):
-        self._context: TradingStrategy = None
-        self._next_step: BaseTradingStep = None
+        self._context: Optional[TradingStrategy] = None
+        self._next_step: Optional[BaseTradingStep] = None
 
     @property
     def context(self) -> TradingStrategy:
+        if self._context is None:
+            raise RuntimeError("TradingStrategy has not been initialized")
         return self._context
 
     @context.setter
-    def context(self, context) -> None:
+    def context(self, context: TradingStrategy) -> None:
         self._context = context
 
     @property
     def next(self) -> BaseTradingStep:
+        if self._next_step is None:
+            raise RuntimeError(f"BaseTradingStep {self.__class__} has not been initialized")
         return self._next_step
 
     @next.setter

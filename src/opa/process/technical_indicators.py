@@ -61,6 +61,6 @@ def relative_strength_index(close: List, timeperiod: int = 10) -> float:
 
 
 def stochastic(high: List, low: List, close: List, timeperiod: int = 10) -> float:
-    stream.STOCH()
+    return stream.STOCH()
 
 
