@@ -78,20 +78,24 @@ jobs:
         run: pytest --cov --cov-report=term-missing
 
   build-docker:
+    if: github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Build api image
-        run: docker build . -f docker/api/Dockerfile
+        run: docker build . -f docker/api/Dockerfile -t ghcr.io/${{ github.repository_owner }}/api:${{ github.sha }} && docker push ghcr.io/${{ github.repository_owner }}/api:${{ github.sha }}
 
       - name: Build collect_hd image
-        run: docker build . -f docker/collectors/historic/Dockerfile
+        run: docker build . -f docker/collectors/historic/Dockerfile  -t ghcr.io/${{ github.repository_owner }}/collect_hd:${{ github.sha }} && docker push ghcr.io/${{ github.repository_owner }}/collect_hd:${{ github.sha }}
 
       - name: Build collect_sd image
-        run: docker build . -f docker/collectors/stream/Dockerfile
+        run: docker build . -f docker/collectors/stream/Dockerfile -t ghcr.io/${{ github.repository_owner }}/collect_sd:${{ github.sha }} && docker push ghcr.io/${{ github.repository_owner }}/collect_sd:${{ github.sha }}
 
       - name: Build stream2hbase image
-        run: docker build . -f docker/pipeline/hbase/Dockerfile
+        run: docker build . -f docker/pipeline/hbase/Dockerfile -t ghcr.io/${{ github.repository_owner }}/stream2hbase:${{ github.sha }} && docker push ghcr.io/${{ github.repository_owner }}/stream2hbase:${{ github.sha }}
