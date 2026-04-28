@@ -4,8 +4,8 @@ import numpy as np
 
 from opa.AppException import UnavailableIndicatorData, UnavailablePriceData
 from opa.core.candlestick import Candlestick
-from opa.trading.indicator.base import BaseIndicator, logger
 from opa.core.ts_queue import TsQueue
+from opa.trading.indicator.base import BaseIndicator, logger
 
 
 class Environment:
