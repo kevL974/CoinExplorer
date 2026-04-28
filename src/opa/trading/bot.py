@@ -3,7 +3,8 @@ from opa.trading.config import get_price_history_size
 from opa.trading.strategy import TradingStrategy, DayTradingStrategy
 from opa.core.candlestick import Candlestick
 from typing import Dict
-from opa.utils import parse_connection_settings, dict_to_candlesticks
+from opa.core.connection import parse_connection_settings
+from opa.core.conversion import dict_to_candlesticks
 from opa.storage.connector import KafkaConnector
 from opa.logging_config import configure_logging
 from kafka import KafkaConsumer

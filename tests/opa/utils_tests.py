@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from opa.utils import TsQueue, csv_to_candlesticks
+from opa.core.ts_queue import TsQueue
+from opa.core.conversion import csv_to_candlesticks
 
 
 @pytest.mark.asyncio

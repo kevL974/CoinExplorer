@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict, Optional
 from opa.storage.model import HbaseEntity
-from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
+from opa.core.connection import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import happybase as hb
 
 logger = logging.getLogger(__name__)

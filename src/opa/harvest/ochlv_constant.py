@@ -3,7 +3,7 @@
 ###
 IDX_OPEN_TIME: int = 0
 IDX_OPEN: int = 1
-IDX_HIGHT: int = 2
+IDX_HIGH: int = 2
 IDX_LOW: int = 3
 IDX_CLOSE: int = 4
 IDX_VOLUME: int = 5
@@ -20,7 +20,7 @@ IDX_IGNORE: int = 11
 KEY_SYMBOL: str = 's'
 KEY_OPEN_TIME: str = 't'
 KEY_OPEN: str = 'o'
-KEY_HIGHT: str = 'h'
+KEY_HIGH: str = 'h'
 KEY_LOW: str = 'l'
 KEY_CLOSE: str = 'c'
 KEY_VOLUME: str = 'v'

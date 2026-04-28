@@ -68,6 +68,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 40
+    restart: unless-stopped
 
   jupyter:
     image: jupyter/datascience-notebook:latest

@@ -3,7 +3,7 @@ from typing import List, Tuple
 from datetime import datetime
 from opa.logging_config import configure_logging
 from opa.storage.repository import HbaseCrudRepository
-from opa.storage.schema import *
+from opa.storage.schema import TABLE_INFO, SCHEMA_INFO_TABLE, TABLE_BINANCE, SCHEMA_BINANCE_TABLE, BINANCE_TABLE_COLUMNS
 import pandas as pd
 import uvicorn
 import os

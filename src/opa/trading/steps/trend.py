@@ -4,7 +4,7 @@ import numpy as np
 
 from opa.AppException import StepError, UnavailableData
 from opa.trading.steps.base import BaseTradingStep, logger
-from opa.utils import detect_convergence
+from opa.trading.detection import detect_convergence
 
 
 class CheckBullRunStep(BaseTradingStep):

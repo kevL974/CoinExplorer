@@ -13,7 +13,7 @@ import urllib.request
 from argparse import ArgumentTypeError
 from pathlib import Path
 
-from opa.util.binance.enums import *
+from opa.util.binance.enums import BASE_URL
 
 logger = logging.getLogger(__name__)
 

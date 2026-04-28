@@ -10,7 +10,7 @@ class BollingerBdIndicator(BaseIndicator):
     def __init__(self,tunit: str, period: int = 20, nbdevup: int =2, nbdevdn: int =2, matype: int = 0) -> None:
         super().__init__(tunit)
         if (nbdevup < 0) or (nbdevdn < 0) or (matype not in [0,1]) or (period < 20):
-            raise ValueError()
+            raise ValueError(f"Invalid parameters: period={period} must be >= 20, nbdevup={nbdevup} and nbdevdn={nbdevdn} must be >= 0, matype={matype} must be 0 or 1")
 
         self._nbdevup: int = nbdevup
         self._nbdevdn: int = nbdevdn

@@ -59,8 +59,3 @@ def relative_strength_index(close: List, timeperiod: int = 10) -> float:
     np_price = np.array(close)
     return stream.RSI(np_price, timeperiod)
 
-
-def stochastic(high: List, low: List, close: List, timeperiod: int = 10) -> float:
-    return stream.STOCH()
-
-

@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple, TypeVar, Optional
 from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
 from opa.storage.repository import HbaseCrudRepository, HbaseEntity
-from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
+from opa.core.connection import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
 import happybase as hb
 
 logger = logging.getLogger(__name__)

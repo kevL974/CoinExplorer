@@ -1,10 +1,12 @@
 import asyncio
 import logging
+from typing import Dict
 from kafka import KafkaConsumer
 from opa.logging_config import configure_logging
 from opa.storage.connector import KafkaConnector
 from opa.storage.repository import HbaseCrudRepository
-from opa.utils import *
+from opa.core.conversion import dict_to_candlesticks
+from opa.core.connection import parse_connection_settings
 import argparse
 import json
 

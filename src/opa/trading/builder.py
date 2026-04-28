@@ -9,7 +9,7 @@ from opa.trading.steps.base import BaseTradingStep, InitStep
 from opa.trading.steps.crossing import BreakingRsiNeutralLine, RetestSmaStep, PriceOnLowBollingerBdStep, \
     MacdCrossAboveSignalStep
 from opa.trading.steps.trend import CheckBullRunStep, ConvergingMovingAverages, OversoldStochasticStep
-from opa.trading.indicator.base import *
+from abc import ABC, abstractmethod
 
 
 class Builder(ABC):

@@ -4,8 +4,9 @@ import os
 from binance import AsyncClient, BinanceSocketManager
 from opa.logging_config import configure_logging
 from opa.storage.connector import InputOutputStream, KafkaConnector
-from opa.utils import *
-from opa.util.binance.enums import *
+from opa.core.conversion import hist_klines_websocket_to_candlestick, stream_klines_to_candlestick
+from opa.core.connection import parse_connection_settings
+from opa.util.binance.enums import INTERVALS
 from typing import List
 
 configure_logging()

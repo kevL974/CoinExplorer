@@ -2,10 +2,11 @@ import argparse
 import asyncio
 import logging
 from opa.logging_config import configure_logging
-from opa.storage.schema import *
+from opa.storage.schema import TABLE_INFO, SCHEMA_INFO_TABLE, TABLE_BINANCE, SCHEMA_BINANCE_TABLE
 from opa.storage.repository import HbaseCrudRepository
-from opa.utils import *
-from opa.util.binance.enums import *
+from opa.core.conversion import csv_to_candlesticks, dezip
+from opa.core.connection import parse_connection_settings
+from opa.util.binance.enums import INTERVALS, YEARS, MONTHS, START_DATE, END_DATE
 from opa.storage.model import Asset
 from typing import List
 from opa.harvest.utility import download_file, convert_to_date_object, get_path

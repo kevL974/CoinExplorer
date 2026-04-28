@@ -1,7 +1,7 @@
 import logging
 import dash_bootstrap_components
 from dash import Dash, dcc, html, Input, Output, State
-from datetime import date, datetime
+from datetime import date
 from typing import List
 from io import StringIO
 from opa.logging_config import configure_logging
