@@ -5,7 +5,6 @@ from kafka import KafkaProducer, KafkaConsumer
 from opa.core.candlestick import Candlestick
 from opa.storage.repository import HbaseCrudRepository, HbaseEntity
 from opa.utils import retry_connection_on_brokenpipe, retry_connection_on_ttransportexception
-import pandas as pd
 import happybase as hb
 
 logger = logging.getLogger(__name__)
@@ -38,34 +37,6 @@ class InputOutputStream(ABC):
     def read(self, **options) -> List:
         pass
 
-
-class CsvConnector(InputOutputStream):
-    def write(self, candlestick: Candlestick, **options) -> None:
-        pass
-
-    def write_lines(self, candlesticks: List[Candlestick], **options) -> None:
-        logger.debug("candlesticks: %s", candlesticks)
-
-    def read(self, list_files_csv: str, symbols: str, intervals: str) -> List:
-        list_hbase_full = []
-        for path_file in list_files_csv:
-            logger.debug("Lecture du fichier: %s", path_file)
-            csv = pd.read_csv(path_file, delimiter=",", header=None)
-            cols = [1, 2, 3, 4, 5, 6]
-            data = csv[cols]
-
-            data.insert(0, 'Symbols', symbols[0])
-            data.insert(1, 'Intervals', intervals[0])
-
-            data_rename = data.rename(
-                columns={1: "Open", 2: "High", 3: "Low", 4: "Close", 5: "Volume", 6: "Close_Time"})
-            data_clean = data_rename.values.tolist()
-            for ligne in data_clean:
-                inser = Candlestick(ligne[0], ligne[1], ligne[2], ligne[3], ligne[4], ligne[5], ligne[6], ligne[7])
-                command_hbase = inser.to_hbase()
-                list_hbase_full.append(command_hbase)
-
-        return list_hbase_full
 
 
 class KafkaConnector(InputOutputStream):

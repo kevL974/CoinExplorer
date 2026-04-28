@@ -9,6 +9,8 @@ COPY src/opa ./src/opa
 
 RUN apt-get update && apt-get install -y build-essential && pip install '.[dashboard]'
 
+COPY services/dashboard .
+
 EXPOSE 5000
 
 CMD ["python3", "dashboard.py"]

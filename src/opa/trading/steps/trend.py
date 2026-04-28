@@ -39,7 +39,6 @@ class CheckBullRunStep(BaseTradingStep):
                     logger.info("CheckBullRunStep: sma_short=%.4f > sma_long=%.4f, rsi=%.4f", sma_short[-1], sma_long[-1], rsi[-1])
                     self.on_success()
                 else:
-                    #print(f"Check bull run : sma_short ({sma_short[-1]}) < sma_long ({sma_long[-1]} and rsi ({rsi[-1]})")
                     self.on_fail()
 
     def on_fail(self) -> None:

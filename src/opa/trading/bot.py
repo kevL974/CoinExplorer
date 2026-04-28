@@ -31,7 +31,7 @@ class TradingBot:
 
 async def run_bot(consumer: KafkaConsumer, bot: TradingBot) -> None:
     for msg in consumer:
-        candlestick = dict_to_candlesticks(json.loads(msg.value))#; print(candlestick)
+        candlestick = dict_to_candlesticks(json.loads(msg.value))
         bot.submit_new_candlestick(candlestick)
 
 

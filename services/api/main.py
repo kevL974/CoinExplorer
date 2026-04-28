@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from typing import Optional, List, Tuple
+from typing import List, Tuple
 from datetime import datetime
 from opa.logging_config import configure_logging
 from opa.storage.repository import HbaseCrudRepository

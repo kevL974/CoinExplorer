@@ -21,10 +21,8 @@ OPA_API_URL: str = os.getenv("OPA_API_URL")
 SMA_VALUE = 1
 EMA_VALUE = 2
 STCH_RSI_VALUE = 3
-gbl_df_candlesticks: pd.DataFrame = None
 color = '#303030'
 color_text = '#fff'
-an_options = [{"inconnu": "inconnu"}]
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 
